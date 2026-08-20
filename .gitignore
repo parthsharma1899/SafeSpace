@@ -1,0 +1,20 @@
+# Python environment
+safespace/
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# Model weights / generated models
+safespace_fusion/models/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment / secrets
+.env
+.env.*
+
+# macOS
+.DS_Store
