@@ -1,11 +1,14 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import time
+from pathlib import Path
 from fusion_engine import FusionEngine
 from werkzeug.utils import secure_filename
 
+BASE_DIR = Path(__file__).resolve().parent
+
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = str(BASE_DIR / 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Ensure upload directory exists
@@ -83,9 +86,9 @@ def analyze():
         
         # Use default files if none uploaded
         if not voice_file_path:
-            voice_file_path = os.path.join("models", "parth.wav")
+            voice_file_path = str(BASE_DIR / "models" / "parth.wav")
         if not face_image_path:
-            face_image_path = os.path.join("models", "models_face", "stress1.jpg")
+            face_image_path = str(BASE_DIR / "models" / "models_face" / "stress1.jpg")
         
         # Collect predictions from all modalities
         sample_scores = {
