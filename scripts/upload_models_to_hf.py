@@ -2,6 +2,7 @@
 import argparse
 
 from huggingface_hub import HfApi, create_repo
+from huggingface_hub.errors import HfHubHTTPError
 
 from model_artifacts import ARTIFACT_PATTERNS, IGNORED_UPLOAD_PATTERNS, MODELS_DIR
 
@@ -33,14 +34,25 @@ def main():
     args = parse_args()
     if not MODELS_DIR.exists():
         raise SystemExit(f"Models directory not found: {MODELS_DIR}")
+    if "YOUR_HF_USERNAME" in args.repo_id:
+        raise SystemExit(
+            "Replace YOUR_HF_USERNAME with your real Hugging Face username or org, "
+            "for example parthsharma1899/safespace-fusion-models."
+        )
 
     print(f"Ensuring Hugging Face repo exists: {args.repo_id}")
-    create_repo(
-        repo_id=args.repo_id,
-        repo_type=args.repo_type,
-        private=not args.public,
-        exist_ok=True,
-    )
+    try:
+        create_repo(
+            repo_id=args.repo_id,
+            repo_type=args.repo_type,
+            private=not args.public,
+            exist_ok=True,
+        )
+    except HfHubHTTPError as exc:
+        raise SystemExit(
+            "Could not create or access the Hugging Face repo. Run `hf auth login`, "
+            "then retry with a real repo id like USERNAME/safespace-fusion-models."
+        ) from exc
 
     print(f"Uploading model artifacts from {MODELS_DIR}...")
     HfApi().upload_folder(

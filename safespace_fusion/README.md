@@ -37,14 +37,14 @@ python -m pip install -r safespace_fusion/requirements.txt
 3. Download the model artifacts:
 
 ```bash
-python scripts/download_models.py --repo-id YOUR_HF_USERNAME/safespace-fusion-models
+python scripts/download_models.py --repo-id parth18s/safespace-fusion-models
 python scripts/check_models.py
 ```
 
 For a private Hugging Face model repo, log in before downloading:
 
 ```bash
-huggingface-cli login
+hf auth login
 ```
 
 ## Uploading Model Artifacts
@@ -60,15 +60,15 @@ Recommended workflow:
 2. Upload model artifacts to a Hugging Face model repo:
 
 ```bash
-huggingface-cli login
-python scripts/upload_models_to_hf.py --repo-id YOUR_HF_USERNAME/safespace-fusion-models
+hf auth login
+python scripts/upload_models_to_hf.py --repo-id parth18s/safespace-fusion-models
 ```
 
 By default the helper creates a private Hugging Face repo. Add `--public` only
 if the model artifacts are safe to share publicly:
 
 ```bash
-python scripts/upload_models_to_hf.py --repo-id YOUR_HF_USERNAME/safespace-fusion-models --public
+python scripts/upload_models_to_hf.py --repo-id parth18s/safespace-fusion-models --public
 ```
 
 3. Send teammates the GitHub repo URL and the Hugging Face repo id.
