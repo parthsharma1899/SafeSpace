@@ -12,10 +12,10 @@ Status values: `reproduced`, `to re-measure`, `to replace`, `not reproduced`,
 |---|---|---|---|
 | Abstract | The fusion is better than previous multimodal approaches | unsupported: the draft has no fusion experiment | scripts/run_fusion_benchmark.py |
 | Table 15, section 4.3 | Real-time evaluation of the fusion | not valid: wrist inputs were random numbers; voice and face inputs were one repeated file | scripts/run_fusion_benchmark.py |
-| Table 8, Table 9, Fig. 6 | Wrist model 99.82% | to replace: one subject, random split, model is a temperature cutoff | scripts/train_wrist.py |
-| Table 6, Table 7, Fig. 5 | Face model 72.69%, better than prior work | not reproduced: saved pipeline is at chance; the saved ViT is untrained; prior work was 7-class | scripts/eval_face.py |
-| Table 10, Table 11, Fig. 7 | Voice model 82.76%, better than prior work | to re-measure: the file works; same actors in train and test; prior work was 8-class | scripts/eval_voice.py |
-| Table 12, Table 13, Fig. 8 | Text model 79.72%, better than prior work | to re-measure: 143 test posts, margin about 6.6 points either way | scripts/eval_text.py |
+| Table 8, Table 9, Fig. 6 | Wrist model 99.82% | replaced: retrained on all 15 WESAD subjects, leave-one-subject-out accuracy 0.8899 (majority 0.6830) / AUC 0.9512, no single-feature dominance (top 0.446), no temperature. The 99.82% was one subject with a random split. | scripts/train_wrist.py |
+| Table 6, Table 7, Fig. 5 | Face model 72.69%, better than prior work | not reproduced as saved (AUC 0.5064, chance; saved ViT untrained). ELM output layer re-fit in 2026 reaches AUC 0.7025 on FER-2013 test, ResNet-driven. Prior work was 7-class. | scripts/eval_face.py, scripts/refit_face_elm.py |
+| Table 10, Table 11, Fig. 7 | Voice model 82.76%, better than prior work | re-measured: 94.24% on all 1,440 RAVDESS clips, but these include training clips and the paper's split shares actors, so it is not a generalisation figure. Loudness-robust (0.93-0.94 at 0.3x-3x). | scripts/eval_voice.py |
+| Table 12, Table 13, Fig. 8 | Text model 79.72%, better than prior work | re-measured: 90.77% acc / 0.9669 AUC on all 715 Dreaddit test posts, but the training split is unknown so some may be seen in training (likely inflated). Weak on negation ("I am not stressed at all" scores 0.60). | scripts/eval_text.py |
 | Section 3.2.3 and Table 5 | The text model is described two different ways | to correct | (paper edit) |
 | Section 3.2.1 | Face images scaled to [-1, 1], ELM outputs emotion classes | to correct: the code scales to [0, 1] and outputs one number | (paper edit) |
 | Equation 4, Algorithm 1 | Weight formula without a clip at zero | to correct: the code and Table 15 clip at zero | docs/fusion.md |

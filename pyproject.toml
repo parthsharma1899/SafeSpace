@@ -8,11 +8,25 @@ version = "0.2.0.dev0"
 description = "Multimodal stress estimation with residual-persistence fusion"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["numpy>=1.26"]
+dependencies = ["numpy>=1.26", "scipy>=1.11"]
 
 [project.optional-dependencies]
 bench = ["pandas>=2.0", "matplotlib>=3.8"]
 dev = ["pytest>=8.0"]
+# The four models' heavy dependencies. Versions match safespace_fusion/requirements.txt,
+# which is the environment the original weights were produced in. Already installed here;
+# installing this group is only needed to run the model wrappers on another machine.
+models = [
+    "joblib==1.5.3",
+    "librosa==0.11.0",
+    "opencv-python==4.13.0.92",
+    "pandas==3.0.3",
+    "scikit-learn==1.9.0",
+    "tensorflow==2.21.0",
+    "torch==2.12.1",
+    "transformers==5.13.0",
+    "xgboost==3.3.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

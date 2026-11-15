@@ -23,11 +23,12 @@ safespace_fusion/models/stress_classifier_epoch2/
 safespace_fusion/models/models_face/resnet50_features/
 safespace_fusion/models/models_face/vit_features/
 
-# Downloaded datasets (fetched by scripts, never committed)
-data/
+# Downloaded datasets (fetched by scripts, never committed) - repo root only,
+# so it does not also hide the src/safespace/data package.
+/data/
 
 # Model weights (fetched or trained, never committed)
-artifacts/
+/artifacts/
 
 # Unpublished paper draft
 Technical_paper*.pdf

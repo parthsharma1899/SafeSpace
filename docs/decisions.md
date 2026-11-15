@@ -8,3 +8,8 @@
 - 2026-11-15, step 0.5 Q3 (rewrite public history to remove 5 personal media
   files): YES to prepare the rewrite; a second yes is still required before
   the force-push itself (step 0.7).
+
+- 2026-11-15, step 3D.3 (face model): RE-FIT the ELM's last layer on FER-2013,
+  keeping ResNet, the ViT file and the ELM hidden layer unchanged. Writes new
+  files under artifacts/face/refit/, touches no original. Ships ON only if test
+  AUC >= 0.70, else stays OFF; number reported either way.
