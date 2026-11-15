@@ -1,0 +1,18 @@
+{
+  "mean_ema_rate": 0.5,
+  "median_ema_rate": 0.5,
+  "oracle_process_var": 0.002,
+  "v2": {
+    "floor_std": 0.05,
+    "base_gain": 0.3,
+    "surprise_k": 2.5,
+    "var_rate": 0.05,
+    "carry": 6.0
+  },
+  "tuning_error": {
+    "mean+ema": 0.06774,
+    "median+ema": 0.0615,
+    "oracle": 0.06291,
+    "v2": 0.05678
+  }
+}

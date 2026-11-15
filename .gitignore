@@ -1,5 +1,5 @@
 # Local Python environments
-safespace/
+/safespace/
 .venv/
 venv/
 env/
@@ -23,9 +23,22 @@ safespace_fusion/models/stress_classifier_epoch2/
 safespace_fusion/models/models_face/resnet50_features/
 safespace_fusion/models/models_face/vit_features/
 
-# Python cache
+# Downloaded datasets (fetched by scripts, never committed)
+data/
+
+# Model weights (fetched or trained, never committed)
+artifacts/
+
+# Unpublished paper draft
+Technical_paper*.pdf
+
+# Python cache and build output
 __pycache__/
 *.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
 
 # Environment / secrets
 .env
