@@ -124,9 +124,37 @@ ignore a lone correct one. Which is better depends on whether a disagreeing
 modality is more often faulty or more often the only one that noticed; the
 benchmark cannot settle that, so the trade-off is reported, not tuned away.
 
-## Limits of this benchmark
+## Validation on real model outputs (virtual subjects)
+
+The benchmark above uses simulated modality scores. The next step replaces them
+with real, held-out scores from the four trained models, drawn to match a
+simulated stress curve (`scripts/run_virtual_subjects.py`, seeds 1000-1199). The
+pairing across people is artificial, but the model errors are real. See
+`results/virtual_subjects.md`.
+
+| method | MAE | bias | episode AUC | false-alarm share |
+|---|---:|---:|---:|---:|
+| v1 | 0.2301 | +0.1870 | 0.8874 | 0.1624 |
+| mean+ema | 0.1257 | -0.0312 | 0.9922 | 0.0002 |
+| median+ema | 0.1291 | -0.0342 | 0.9920 | 0.0002 |
+| v2 | 0.1259 | -0.0266 | 0.9824 | 0.0019 |
+
+Two honest conclusions:
+
+- **v2 beats v1 decisively.** v1's MAE is almost double v2's, it reads far too
+  high (bias +0.19 against -0.03), and it false-alarms on 16% of calm steps
+  against 0.2%. v1's upward tilt is a real defect, not a simulator artefact.
+- **v2 ties the best simple baseline here.** With all four modalities usually
+  present and informative, a tuned smoothed mean matches v2 on error (0.126 each)
+  and edges it on episode AUC (0.992 vs 0.982). v2's clear advantage appears only
+  when a modality is stuck, flipping, biased, or the lone detector -- the fault
+  scenarios of the benchmark above. So v2's case is robustness and zero bias, not
+  that it is uniformly the most accurate combiner when every model is behaving.
+
+## Limits
 
 The simulator shows how a fusion rule behaves under stated assumptions about
-noise, bias, gaps and faults. It cannot show that the fused score matches a real
-person's stress. That requires several modalities recorded from the same people,
-which is the next stage of validation (Phase 4).
+noise, bias, gaps and faults. The virtual-subject step adds real model error but
+still pairs modalities across different people. Neither shows that the fused score
+matches one real person's stress; that needs several modalities recorded from the
+same people (UBFC-Phys and StressID, Phase 4.2-4.3).

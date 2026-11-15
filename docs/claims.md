@@ -10,7 +10,7 @@ Status values: `reproduced`, `to re-measure`, `to replace`, `not reproduced`,
 
 | Where in the paper draft | Claim | Status | Script |
 |---|---|---|---|
-| Abstract | The fusion is better than previous multimodal approaches | unsupported: the draft has no fusion experiment | scripts/run_fusion_benchmark.py |
+| Abstract | The fusion is better than previous multimodal approaches | partly supported, narrowed: v2 beats the paper's v1 decisively (benchmark and virtual subjects) and is unbiased and fault-robust, but on real model outputs with all modalities present it only ties a tuned smoothed mean. Claim should be "robust and unbiased", not "uniformly most accurate". | scripts/run_fusion_benchmark.py, scripts/run_virtual_subjects.py |
 | Table 15, section 4.3 | Real-time evaluation of the fusion | not valid: wrist inputs were random numbers; voice and face inputs were one repeated file | scripts/run_fusion_benchmark.py |
 | Table 8, Table 9, Fig. 6 | Wrist model 99.82% | replaced: retrained on all 15 WESAD subjects, leave-one-subject-out accuracy 0.8899 (majority 0.6830) / AUC 0.9512, no single-feature dominance (top 0.446), no temperature. The 99.82% was one subject with a random split. | scripts/train_wrist.py |
 | Table 6, Table 7, Fig. 5 | Face model 72.69%, better than prior work | not reproduced as saved (AUC 0.5064, chance; saved ViT untrained). ELM output layer re-fit in 2026 reaches AUC 0.7025 on FER-2013 test, ResNet-driven. Prior work was 7-class. | scripts/eval_face.py, scripts/refit_face_elm.py |

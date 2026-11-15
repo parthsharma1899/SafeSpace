@@ -42,3 +42,11 @@ WAIT | 2026-11-15 | blocked on: WESAD download (bg), face refit full run (bg)
 3A.5 | 2026-11-16 | done | wrist wrapper: S2 stress>baseline; 2 tests pass
 3E.1 | 2026-11-16 | done | fit_calibration.py: wrist Brier 0.0825->0.0788, text 0.0750->0.0730; voice/face identity; calibration.json + calibration.md
 3E.2 | 2026-11-16 | done | wrist card written; all 4 cards' numbers trace to results/ (paper figures attributed)
+3E.3 | 2026-11-16 | done | Phase 3 committed as 9d0a76f (amended); tree clean; 0 data/artifacts tracked; fixed .gitignore /data/ anchoring
+PHASE3 | 2026-11-16 | COMPLETE | all 4 models done; 164 tests; 6 result files
+4.1 | 2026-11-16 | running | run_virtual_subjects.py in background (building voice/face pools then fusing)
+4.2 | 2026-11-16 | WAITING on owner | UBFC-Phys requires owner registration+download into data/raw/ubfc_phys/ (PLAN.md D.4)
+4.3 | 2026-11-16 | WAITING on owner | StressID requires faculty-signed licence (PLAN.md D.3); approval time unknown
+4.4 | 2026-11-16 | WAITING on owner | pilot needs volunteers + consent (ASK FIRST, PLAN.md 4.4)
+4.1 | 2026-11-16 | done | virtual_subjects.md: v2 MAE 0.1259 (ties mean+ema 0.1257), beats v1 0.2301; v2 unbiased (-0.027) vs v1 +0.187. Honest: v2 wins on robustness/bias, ties best smoothed baseline when all modalities reliable. fusion.md + claims updated.
+PHASE4 | 2026-11-16 | exit check met | 4.1 done; 4.2/4.3/4.4 recorded WAITING on owner access
