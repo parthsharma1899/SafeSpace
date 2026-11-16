@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install (fusion + simulator + tests only)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,bench]"
+      - name: Run tests
+        # Tests needing datasets or trained weights skip when those are absent,
+        # so the full suite passes without downloading anything.
+        run: pytest -q
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
