@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
 from .bundle import RealBundle, StubBundle
 from .sessions import SessionStore
@@ -85,6 +86,14 @@ def create_app(bundle=None) -> FastAPI:
         yield
 
     app = FastAPI(title="SafeSpace", docs_url=None, redoc_url=None, lifespan=lifespan)
+
+    # Allow the local dev/preview frontend (any localhost port) to call the API.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.get("/health")
     def health():
