@@ -58,3 +58,4 @@ PHASE4 | 2026-11-16 | exit check met | 4.1 done; 4.2/4.3/4.4 recorded WAITING on
 6.3 | 2026-11-16 | done | Vite+React+TS playground; v1/v2 TS ports match Python exactly (<1e-9) over 6000 steps; npm test + npm run build pass
 6.4 | 2026-11-16 | done | demo page (webcam/mic/text check-in + timeline); full flow verified vs stub backend (text+image+audio -> fused/level/message/weights); CORS added for localhost
 6.5 | 2026-11-16 | PENDING owner | publish playground to GitHub Pages needs owner yes (ASK FIRST)
+7.1 | 2026-11-16 | done | support.py: Low/Medium/High fixed; High+key -> Gemini (GEMINI_MODEL), 5s timeout, sends only level/modality/trend (no user data); falls back on no-key/error/no-model. 5 tests. app.py uses it directly; google-genai in api deps.

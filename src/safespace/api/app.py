@@ -24,26 +24,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .bundle import RealBundle, StubBundle
 from .sessions import SessionStore
+from .support import support_message
 
 MAX_UPLOAD = 16 * 1024 * 1024
 MODALITIES = ("wrist", "text", "voice", "face")
-
-_FIXED = {
-    "Low": "You seem to be doing fine. Keep going.",
-    "Medium": "Things look a little tense. A few slow breaths or a short break might help.",
-    "High": "This looks like a stressful moment. It may help to pause, breathe slowly, and reach out to someone you trust.",
-}
-
-
-def _support_message(level: str, top_modality: Optional[str], trend: str) -> str:
-    # Phase 7 replaces this with a Gemini call for the High case; the fixed text
-    # here is exactly that call's fallback.
-    try:
-        from .support import support_message
-
-        return support_message(level, top_modality, trend)
-    except Exception:
-        return _FIXED.get(level, _FIXED["Medium"])
 
 
 async def _to_tempfile(upload: UploadFile, suffix: str) -> str:
@@ -174,7 +158,7 @@ def create_app(bundle=None) -> FastAPI:
             trend = "rising"
         elif fused_detail.get("residual", 0) < -0.03:
             trend = "falling"
-        message = _support_message(level, result.dominant, trend) if result.score is not None else ""
+        message = support_message(level, result.dominant, trend) if result.score is not None else ""
 
         response = {
             "t": round(now - session.created, 2),
