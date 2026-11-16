@@ -50,3 +50,6 @@ PHASE3 | 2026-11-16 | COMPLETE | all 4 models done; 164 tests; 6 result files
 4.4 | 2026-11-16 | WAITING on owner | pilot needs volunteers + consent (ASK FIRST, PLAN.md 4.4)
 4.1 | 2026-11-16 | done | virtual_subjects.md: v2 MAE 0.1259 (ties mean+ema 0.1257), beats v1 0.2301; v2 unbiased (-0.027) vs v1 +0.187. Honest: v2 wins on robustness/bias, ties best smoothed baseline when all modalities reliable. fusion.md + claims updated.
 PHASE4 | 2026-11-16 | exit check met | 4.1 done; 4.2/4.3/4.4 recorded WAITING on owner access
+5.1 | 2026-11-16 | done | installed fastapi/uvicorn/multipart/httpx/websockets/pyserial; declared api group in pyproject
+5.2 | 2026-11-16 | done | API: create_app(bundle); sessions (own fusion+alert, 30min TTL), /health /sessions /baseline /observations GET /sessions WS /wrist; rules 1,4,5,6,8 tested (9 tests); stub server serves /health + full observation
+5.3 | 2026-11-16 | done | wearable_bridge.py (BVP/GSR, ws or serial, addr as CLI arg); replays 20-line sample -> 20 forwarded (3 tests)
