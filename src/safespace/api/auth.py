@@ -1,6 +1,6 @@
 """Sign-in: checks the access token that Supabase Auth gives a signed-in user.
 
-The web app signs people in with Supabase (email and password). Each request
+The web app signs people in with Supabase (Google, or email and password). Each request
 from a signed-in user carries `Authorization: Bearer <access token>`. This module
 verifies that token against the project's public signing keys, published at
 `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`, so the server needs no Supabase

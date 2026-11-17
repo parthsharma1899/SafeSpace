@@ -28,8 +28,8 @@ before stress builds up.
 
 **What this repository does today:**
 
-- **Every check-in is saved per person.** A person signs in (email and password,
-  via Supabase), agrees to have their scores kept, and each check-in's scores
+- **Every check-in is saved per person.** A person signs in (with Google, or
+  email and password, via Supabase), agrees to have their scores kept, and each check-in's scores
   are stored under their account. Only numbers and times are stored, never the
   words, recording or photo.
 - **The residual and persistence are computed across logins.** On every
@@ -179,8 +179,16 @@ cd web && npm install && npm run dev
 2. Under Authentication, URL Configuration, set the **Site URL** to
    `http://localhost:5173`, so confirmation and password-reset emails link back
    to the app.
-3. Email sign-in is on by default. Supabase's built-in email sender allows only
-   a few emails an hour; for real users, set up custom SMTP.
+3. **Google sign-in** (the main way in): in Google Cloud Console, set up the
+   OAuth consent screen, then create an OAuth client ID of type "Web
+   application" with the authorised redirect URI
+   `https://<project-ref>.supabase.co/auth/v1/callback`. Paste its client ID
+   and secret into Supabase under Authentication, Sign In / Providers, Google.
+   The secret goes only into the Supabase dashboard, never into this repo. The
+   web app shows "Continue with Google" as soon as the provider is on.
+4. Email and password sign-in stays available ("Use email instead"). Supabase's
+   built-in email sender allows only a few emails an hour; for real users, set
+   up custom SMTP.
 
 The server checks each request's sign-in token against the project's public
 signing keys, so it needs no Supabase secret. The web app gets both values from

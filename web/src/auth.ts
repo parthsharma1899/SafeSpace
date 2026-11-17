@@ -1,16 +1,38 @@
-// Sign-in with Supabase Auth (email and password). The project URL and its
+// Sign-in with Supabase Auth (Google, or email and password). The project URL and its
 // publishable key come from the API's /config, so the web app has no build-time
 // settings. Supabase keeps the session in the browser and refreshes it.
 
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 
 let client: SupabaseClient | null = null;
+let settings: { url: string; key: string } | null = null;
 
 export function initAuth(url: string, publishableKey: string): SupabaseClient {
+  settings = { url, key: publishableKey };
   client ??= createClient(url, publishableKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
   return client;
+}
+
+/** Whether Google sign-in is switched on in the Supabase project. */
+export async function googleEnabled(): Promise<boolean> {
+  if (!settings) return false;
+  try {
+    const res = await fetch(`${settings.url}/auth/v1/settings`, { headers: { apikey: settings.key } });
+    return res.ok && Boolean((await res.json()).external?.google);
+  } catch {
+    return false;
+  }
+}
+
+/** Sends the browser to Google; Supabase brings it back here signed in. */
+export async function signInWithGoogle(): Promise<void> {
+  const { error } = await auth().signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) throw new Error(friendly(error.message));
 }
 
 function auth() {
