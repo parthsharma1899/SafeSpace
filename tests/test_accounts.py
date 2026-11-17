@@ -2,12 +2,16 @@
 
 import io
 import sqlite3
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
 pytest.importorskip("fastapi")
 jwt = pytest.importorskip("jwt")
+httpx = pytest.importorskip("httpx")
+sys.path.insert(0, str(Path(__file__).parent))  # for fake_postgrest
 from cryptography.hazmat.primitives.asymmetric import ec  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
@@ -33,9 +37,19 @@ def auth(sub="user-a", **kw):
     return {"Authorization": f"Bearer {token(sub, **kw)}"}
 
 
-@pytest.fixture
-def db(tmp_path):
-    return AccountStore(tmp_path / "accounts.db")
+@pytest.fixture(params=["sqlite", "supabase"])
+def db(request, tmp_path):
+    """Every account test runs against both stores: SQLite (local) and Supabase (hosted)."""
+    if request.param == "sqlite":
+        return AccountStore(tmp_path / "accounts.db")
+    from fake_postgrest import KEY as PUBLISHABLE, FakePostgrest
+
+    from safespace.api.supabase_store import SupabaseStore
+
+    fake = FakePostgrest()
+    store = SupabaseStore("https://example-project.supabase.co", PUBLISHABLE, transport=fake.transport())
+    store.fake = fake
+    return store
 
 
 @pytest.fixture
@@ -121,6 +135,8 @@ def test_scores_are_saved_only_after_consent(c):
 
 
 def test_only_scores_are_stored(c, db):
+    if not isinstance(db, AccountStore):
+        pytest.skip("checked for Supabase in test_supabase_rows_hold_only_scores")
     c.post("/me/consent", headers=auth())
     c.post(
         "/me/checkins", data={"text": "my private words"}, headers=auth(),
@@ -197,3 +213,50 @@ def test_demo_mode_when_no_weights(monkeypatch, tmp_path):
     assert health["demo"] is True
     assert set(health["models"].values()) == {"demo"}  # never claims real models are ready
     assert c.get("/config").json()["demo"] is True
+
+
+# ---- Supabase store specifics ------------------------------------------------------
+
+@pytest.fixture
+def supa():
+    from fake_postgrest import KEY as PUBLISHABLE, FakePostgrest
+
+    from safespace.api.supabase_store import SupabaseStore
+
+    fake = FakePostgrest()
+    store = SupabaseStore("https://example-project.supabase.co", PUBLISHABLE, transport=fake.transport())
+    verifier = SupabaseVerifier(URL, keys=lambda _token: KEY.public_key())
+    return fake, TestClient(create_app(StubBundle(), store, verifier=verifier))
+
+
+def test_supabase_requests_act_as_the_person(supa):
+    """Each request carries the publishable key and the person's own token, never a secret."""
+    fake, c = supa
+    c.post("/me/consent", headers=auth("user-a"))
+    checkin(c, "user-a")
+    assert fake.requests
+    for r in fake.requests:
+        assert r.headers["apikey"] == "sb_publishable_test"
+        assert jwt.decode(r.headers["authorization"][7:], options={"verify_signature": False})["sub"] == "user-a"
+
+
+def test_supabase_rows_hold_only_scores(supa):
+    fake, c = supa
+    c.post("/me/consent", headers=auth())
+    c.post("/me/checkins", data={"text": "my private words"}, headers=auth(),
+           files={"audio": ("v.wav", io.BytesIO(b"RIFFvoice"), "audio/wav")})
+    assert len(fake.checkins) == 1
+    assert set(fake.checkins[0]) == {"id", "user_id", "t", "wrist", "text", "voice", "face"}
+    assert "my private words" not in str(fake.checkins)
+
+
+def test_supabase_outage_is_503():
+    from safespace.api.supabase_store import SupabaseStore
+
+    def down(_request):
+        raise httpx.ConnectError("no route to host")
+
+    store = SupabaseStore("https://example-project.supabase.co", "sb_publishable_test", transport=httpx.MockTransport(down))
+    verifier = SupabaseVerifier(URL, keys=lambda _token: KEY.public_key())
+    c = TestClient(create_app(StubBundle(), store, verifier=verifier))
+    assert c.get("/me", headers=auth()).status_code == 503

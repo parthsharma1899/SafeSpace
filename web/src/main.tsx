@@ -16,7 +16,7 @@ import {
   submitAccountCheckIn,
   submitGuestCheckIn,
 } from "./api";
-import { accessToken, initAuth, onAuthChange, signOut } from "./auth";
+import { accessToken, initAuth, isFramed, onAuthChange, signOut } from "./auth";
 import { BaselineProgress, ChangeFromNormal } from "./components/Baseline";
 import { Breakdown } from "./components/Breakdown";
 import { Breathing } from "./components/Breathing";
@@ -199,6 +199,13 @@ function App() {
           <button className="btn ghost small" onClick={() => go("account")}><UserIcon /> Account</button>
         )}
       </header>
+
+      {isFramed() && (
+        <p className="demo-banner frame-banner">
+          For the camera, microphone and Google sign-in,{" "}
+          <a href={window.location.origin} target="_blank" rel="noopener">open SafeSpace in its own tab</a>.
+        </p>
+      )}
 
       {config?.demo && (
         <p className="demo-banner" role="status">

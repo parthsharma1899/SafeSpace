@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 import os
 import ssl
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import jwt
@@ -52,6 +52,8 @@ def _ssl_context() -> ssl.SSLContext:
 class Identity:
     user_id: str
     email: Optional[str] = None
+    # The verified access token, used to act as this person in Supabase (row-level security).
+    token: str = field(default="", repr=False)
 
 
 class SupabaseVerifier:
@@ -87,7 +89,7 @@ class SupabaseVerifier:
         except jwt.PyJWTError as e:
             log.info("rejected token: %s", e)
             raise AuthError("invalid or expired sign-in") from e
-        return Identity(user_id=str(claims["sub"]), email=claims.get("email"))
+        return Identity(user_id=str(claims["sub"]), email=claims.get("email"), token=token)
 
 
 def bearer_token(authorization: Optional[str]) -> str:

@@ -24,6 +24,7 @@ the response is sent. Only scores and times are ever stored.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import tempfile
 import time
@@ -32,6 +33,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from ..models.base import ModalityScore
 from .auth import AuthError, AuthUnavailable, Identity, bearer_token, public_config, verifier_from_env
@@ -39,10 +41,12 @@ from .bundle import RealBundle, StubBundle, installed
 from .config import load_env
 from .sessions import SessionStore
 from .store import AccountStore
+from .supabase_store import StoreUnavailable, SupabaseStore
 from .support import support_message
 from .tracker import BASELINE_READINGS, replay
 
 MAX_UPLOAD = 16 * 1024 * 1024
+log = logging.getLogger("safespace.api")
 _UNSET = object()
 
 
@@ -81,11 +85,23 @@ def _trend(history: list[dict]) -> str:
     return "rising" if d > 0.03 else "falling" if d < -0.03 else "steady"
 
 
-def create_app(bundle=None, accounts: Optional[AccountStore] = None, verifier=_UNSET) -> FastAPI:
+def store_from_env():
+    """Where signed-in people's scores are kept: SQLite locally (default), or
+    Supabase's Postgres with SAFESPACE_STORE=supabase (the hosted app)."""
+    if os.environ.get("SAFESPACE_STORE", "sqlite").strip().lower() == "supabase":
+        url = os.environ.get("SUPABASE_URL", "").strip()
+        key = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "").strip()
+        if not (url and key):
+            raise RuntimeError("SAFESPACE_STORE=supabase needs SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY")
+        return SupabaseStore(url, key)
+    return AccountStore()
+
+
+def create_app(bundle=None, accounts=None, verifier=_UNSET) -> FastAPI:
     # RealBundle() is cheap to construct (it loads weights only on .load(), which
     # runs on startup), so importing this module never loads the heavy models.
     bundle = bundle if bundle is not None else RealBundle()
-    accounts = accounts if accounts is not None else AccountStore()
+    accounts = accounts if accounts is not None else store_from_env()
     verifier = verifier_from_env() if verifier is _UNSET else verifier
     sessions = SessionStore()
 
@@ -95,6 +111,11 @@ def create_app(bundle=None, accounts: Optional[AccountStore] = None, verifier=_U
         yield
 
     app = FastAPI(title="SafeSpace", docs_url=None, redoc_url=None, lifespan=lifespan)
+
+    @app.exception_handler(StoreUnavailable)
+    async def store_down(_request, exc):
+        log.error("%s", exc)
+        return JSONResponse(status_code=503, content={"detail": "saved data is unavailable right now"})
 
     # Allow the local dev/preview frontend (any localhost port) to call the API.
     app.add_middleware(
@@ -183,8 +204,8 @@ def create_app(bundle=None, accounts: Optional[AccountStore] = None, verifier=_U
 
     @app.get("/me")
     def me(who: Identity = Depends(signed_in)):
-        account = accounts.get(who.user_id)
-        history = replay(accounts.checkins(who.user_id))
+        account = accounts.get(who)
+        history = replay(accounts.checkins(who))
         return {
             "consented": account.consented is not None,
             "checkins": account.checkins,
@@ -194,7 +215,7 @@ def create_app(bundle=None, accounts: Optional[AccountStore] = None, verifier=_U
 
     @app.post("/me/consent")
     def give_consent(who: Identity = Depends(signed_in)):
-        account = accounts.consent(who.user_id)
+        account = accounts.consent(who)
         return {"consented": True, "checkins": account.checkins}
 
     @app.post("/me/checkins")
@@ -204,22 +225,22 @@ def create_app(bundle=None, accounts: Optional[AccountStore] = None, verifier=_U
         audio: Optional[UploadFile] = File(None),
         image: Optional[UploadFile] = File(None),
     ):
-        if accounts.get(who.user_id).consented is None:
+        if accounts.get(who).consented is None:
             raise HTTPException(status_code=403, detail="agree to saving your scores first")
         modalities = await score_inputs(text, None, audio, image, None)
         scores = {m: d["score"] for m, d in modalities.items() if d["available"]}
         if not scores:
-            return {"fused": None, "modalities": modalities, "checkin_number": accounts.get(who.user_id).checkins, "message": ""}
-        accounts.add_checkin(who.user_id, time.time(), scores)
-        return respond(modalities, replay(accounts.checkins(who.user_id)))
+            return {"fused": None, "modalities": modalities, "checkin_number": accounts.get(who).checkins, "message": ""}
+        accounts.add_checkin(who, time.time(), scores)
+        return respond(modalities, replay(accounts.checkins(who)))
 
     @app.get("/me/history")
     def account_history(who: Identity = Depends(signed_in)):
-        return {"checkins": [summary(h) for h in replay(accounts.checkins(who.user_id))]}
+        return {"checkins": [summary(h) for h in replay(accounts.checkins(who))]}
 
     @app.delete("/me")
     def delete_my_data(who: Identity = Depends(signed_in)):
-        return {"deleted_checkins": accounts.delete(who.user_id)}
+        return {"deleted_checkins": accounts.delete(who)}
 
     # ---- guest sessions: kept in memory only (also the wearable bridge) ---------
 

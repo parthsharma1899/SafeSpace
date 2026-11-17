@@ -26,8 +26,22 @@ export async function googleEnabled(): Promise<boolean> {
   }
 }
 
-/** Sends the browser to Google; Supabase brings it back here signed in. */
+/** True when the app runs inside another page's frame (e.g. the Hugging Face Space page). */
+export function isFramed(): boolean {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true; // a cross-origin parent hides window.top
+  }
+}
+
+/** Sends the browser to Google; Supabase brings it back here signed in. Google
+ * refuses to load inside a frame, so a framed app opens sign-in in a new tab. */
 export async function signInWithGoogle(): Promise<void> {
+  if (isFramed()) {
+    window.open(window.location.origin, "_blank", "noopener");
+    return;
+  }
   const { error } = await auth().signInWithOAuth({
     provider: "google",
     options: { redirectTo: window.location.origin },

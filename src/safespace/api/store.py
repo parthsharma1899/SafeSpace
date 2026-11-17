@@ -7,7 +7,9 @@ signal's score (empty if that signal was not used). The words, recordings and
 photos a person sends are never written here; they are deleted as soon as they
 are scored. Deleting an account's data removes every row.
 
-SQLite, at data/app/safespace.db (or $SAFESPACE_DB). One server process.
+SQLite, at data/app/safespace.db (or $SAFESPACE_DB), for running locally; one
+server process. The hosted app uses SupabaseStore (supabase_store.py) instead.
+Every method takes the signed-in Identity (auth.py).
 """
 
 from __future__ import annotations
@@ -58,14 +60,16 @@ class AccountStore:
             )
             self._db.execute("CREATE INDEX IF NOT EXISTS account_checkins_user ON account_checkins(user_id, t)")
 
-    def get(self, user_id: str) -> Account:
+    def get(self, who) -> Account:
+        user_id = who.user_id
         """The account's state; an account never seen before has no consent and no check-ins."""
         with self._lock:
             row = self._db.execute("SELECT consented FROM accounts WHERE user_id = ?", (user_id,)).fetchone()
             count = self._db.execute("SELECT COUNT(*) FROM account_checkins WHERE user_id = ?", (user_id,)).fetchone()[0]
         return Account(user_id=user_id, consented=row[0] if row else None, checkins=count)
 
-    def consent(self, user_id: str, now: Optional[float] = None) -> Account:
+    def consent(self, who, now: Optional[float] = None) -> Account:
+        user_id = who.user_id
         now = time.time() if now is None else now
         with self._lock, self._db:
             self._db.execute(
@@ -73,16 +77,18 @@ class AccountStore:
                 " ON CONFLICT(user_id) DO UPDATE SET consented = COALESCE(accounts.consented, excluded.consented)",
                 (user_id, now, now),
             )
-        return self.get(user_id)
+        return self.get(who)
 
-    def delete(self, user_id: str) -> int:
+    def delete(self, who) -> int:
         """Remove the account's consent record and every saved check-in. Returns check-ins removed."""
+        user_id = who.user_id
         with self._lock, self._db:
             n = self._db.execute("SELECT COUNT(*) FROM account_checkins WHERE user_id = ?", (user_id,)).fetchone()[0]
             self._db.execute("DELETE FROM accounts WHERE user_id = ?", (user_id,))
         return n
 
-    def add_checkin(self, user_id: str, t: float, scores: dict[str, float]) -> None:
+    def add_checkin(self, who, t: float, scores: dict[str, float]) -> None:
+        user_id = who.user_id
         values = [scores.get(s) for s in SIGNALS]
         with self._lock, self._db:
             self._db.execute(
@@ -90,7 +96,8 @@ class AccountStore:
                 (user_id, t, *values),
             )
 
-    def checkins(self, user_id: str) -> list[tuple[float, dict[str, float]]]:
+    def checkins(self, who) -> list[tuple[float, dict[str, float]]]:
+        user_id = who.user_id
         with self._lock:
             rows = self._db.execute(
                 "SELECT t, wrist, text, voice, face FROM account_checkins WHERE user_id = ? ORDER BY t, id", (user_id,)

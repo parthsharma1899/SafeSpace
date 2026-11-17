@@ -200,6 +200,8 @@ textarea::placeholder { color: var(--muted); }
   max-width: 640px; width: calc(100% - 32px); margin: 14px auto 0; padding: 10px 14px; border-radius: 12px;
   background: var(--medium-soft); color: var(--ink); font-size: 0.9rem;
 }
+.frame-banner { background: var(--brand-soft); }
+.frame-banner a { color: var(--brand); font-weight: 600; }
 .center { text-align: center; padding-top: 10vh; }
 .banner.info { background: var(--brand-soft); color: var(--ink); }
 

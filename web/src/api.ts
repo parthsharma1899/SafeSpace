@@ -91,7 +91,7 @@ async function call(path: string, init: RequestInit = {}, token?: string): Promi
   if (res.ok) return res;
   if (res.status === 401) throw new ApiError("Your sign-in has expired. Please sign in again.", 401);
   if (res.status === 413) throw new ApiError("That recording or photo is too large. Please try a shorter clip.", 413);
-  if (res.status === 503) throw new ApiError("Sign-in can't be checked right now. Please try again in a moment.", 503);
+  if (res.status === 503) throw new ApiError("SafeSpace is briefly unavailable. Please try again in a moment.", 503);
   throw new ApiError("Something went wrong. Please try again.", res.status);
 }
 
