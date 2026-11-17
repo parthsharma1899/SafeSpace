@@ -35,7 +35,8 @@ api = [
     "websockets>=12",
     "pyserial>=3.5",
     "google-genai>=1.0",
-    "PyJWT[crypto]>=2.8",
+    "PyJWT[crypto]>=2.9",
+    "certifi",
     "huggingface_hub>=0.30",
 ]
 

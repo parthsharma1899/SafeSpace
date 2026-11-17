@@ -16,7 +16,9 @@ Configuration (environment or the repo-root `.env`, see config.py):
 
 from __future__ import annotations
 
+import logging
 import os
+import ssl
 from dataclasses import dataclass
 from typing import Optional
 
@@ -24,10 +26,26 @@ import jwt
 
 ALGORITHMS = ["ES256", "RS256"]
 AUDIENCE = "authenticated"
+log = logging.getLogger("safespace.auth")
 
 
 class AuthError(Exception):
     """The request has no valid sign-in token."""
+
+
+class AuthUnavailable(Exception):
+    """The project's signing keys could not be fetched, so no token can be checked."""
+
+
+def _ssl_context() -> ssl.SSLContext:
+    # Python from python.org on macOS has no root certificates until "Install
+    # Certificates" is run, so HTTPS to Supabase fails; certifi's bundle avoids that.
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
 
 
 @dataclass(frozen=True)
@@ -47,18 +65,27 @@ class SupabaseVerifier:
         self.url = url.rstrip("/")
         self.issuer = f"{self.url}/auth/v1"
         if keys is None:
-            client = jwt.PyJWKClient(f"{self.issuer}/.well-known/jwks.json", cache_keys=True, lifespan=3600)
+            client = jwt.PyJWKClient(
+                f"{self.issuer}/.well-known/jwks.json", cache_keys=True, lifespan=3600, ssl_context=_ssl_context()
+            )
             keys = lambda token: client.get_signing_key_from_jwt(token).key  # noqa: E731
         self._keys = keys
 
     def verify(self, token: str) -> Identity:
         try:
             key = self._keys(token)
+        except jwt.PyJWKClientConnectionError as e:
+            log.error("cannot fetch Supabase signing keys: %s", e)
+            raise AuthUnavailable("sign-in cannot be checked right now") from e
+        except Exception as e:  # malformed token, unknown key id
+            raise AuthError("invalid or expired sign-in") from e
+        try:
             claims = jwt.decode(
                 token, key, algorithms=ALGORITHMS, audience=AUDIENCE, issuer=self.issuer,
                 options={"require": ["exp", "sub", "aud", "iss"]},
             )
-        except Exception as e:  # any failure, including an unreachable key server, means "not signed in"
+        except jwt.PyJWTError as e:
+            log.info("rejected token: %s", e)
             raise AuthError("invalid or expired sign-in") from e
         return Identity(user_id=str(claims["sub"]), email=claims.get("email"))
 

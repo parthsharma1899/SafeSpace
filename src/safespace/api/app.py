@@ -34,7 +34,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..models.base import ModalityScore
-from .auth import AuthError, Identity, bearer_token, public_config, verifier_from_env
+from .auth import AuthError, AuthUnavailable, Identity, bearer_token, public_config, verifier_from_env
 from .bundle import RealBundle, StubBundle, installed
 from .config import load_env
 from .sessions import SessionStore
@@ -111,6 +111,8 @@ def create_app(bundle=None, accounts: Optional[AccountStore] = None, verifier=_U
             raise HTTPException(status_code=503, detail="sign-in is not set up on this server")
         try:
             return verifier.verify(bearer_token(authorization))
+        except AuthUnavailable as e:
+            raise HTTPException(status_code=503, detail=str(e))
         except AuthError as e:
             raise HTTPException(status_code=401, detail=str(e), headers={"WWW-Authenticate": "Bearer"})
 

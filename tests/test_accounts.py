@@ -66,6 +66,27 @@ def test_invalid_tokens_are_rejected(c, bad):
     assert c.get("/me", headers=auth(**bad)).status_code == 401
 
 
+def test_unreachable_key_server_is_503_not_expired(db):
+    """Regression: a failed fetch of Supabase's keys (e.g. no root certificates on
+    macOS Python) was reported as an expired sign-in."""
+
+    def unreachable(_token):
+        raise jwt.PyJWKClientConnectionError("certificate verify failed")
+
+    c = TestClient(create_app(StubBundle(), db, verifier=SupabaseVerifier(URL, keys=unreachable)))
+    r = c.get("/me", headers=auth())
+    assert r.status_code == 503
+
+
+def test_key_fetch_uses_a_certificate_bundle():
+    certifi = pytest.importorskip("certifi")
+    from safespace.api.auth import _ssl_context
+
+    ctx = _ssl_context()
+    assert ctx.verify_mode.name == "CERT_REQUIRED"
+    assert ctx.cert_store_stats()["x509_ca"] > 0, f"no CA certificates loaded (certifi at {certifi.where()})"
+
+
 def test_without_supabase_configured_accounts_are_off():
     c = TestClient(create_app(StubBundle(), AccountStore(":memory:"), verifier=None))
     assert c.get("/me", headers=auth()).status_code == 503
