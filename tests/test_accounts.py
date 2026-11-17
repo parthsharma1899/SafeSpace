@@ -193,5 +193,7 @@ def test_demo_mode_when_no_weights(monkeypatch, tmp_path):
     b = _bundle_from_env()
     assert b.is_stub
     c = TestClient(create_app(b, AccountStore(":memory:"), verifier=None))
-    assert c.get("/health").json()["demo"] is True
+    health = c.get("/health").json()
+    assert health["demo"] is True
+    assert set(health["models"].values()) == {"demo"}  # never claims real models are ready
     assert c.get("/config").json()["demo"] is True

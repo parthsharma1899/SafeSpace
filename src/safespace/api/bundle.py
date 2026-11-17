@@ -117,7 +117,8 @@ class StubBundle:
         return self
 
     def health(self) -> dict:
-        return {"wrist": "ready", "text": "ready", "voice": "ready", "face": "ready" if self.face_enabled else "disabled"}
+        # "demo": these are fixed sample scores, not trained models.
+        return {"wrist": "demo", "text": "demo", "voice": "demo", "face": "demo" if self.face_enabled else "disabled"}
 
     def _score(self, modality) -> ModalityScore:
         v = self.scores.get(modality)
