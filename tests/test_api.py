@@ -7,10 +7,11 @@ from fastapi.testclient import TestClient
 
 from safespace.api.app import create_app
 from safespace.api.bundle import StubBundle
+from safespace.api.store import AccountStore
 
 
 def client(**kwargs):
-    return TestClient(create_app(StubBundle(**kwargs)))
+    return TestClient(create_app(StubBundle(**kwargs), AccountStore(":memory:"), verifier=None))
 
 
 def test_health_lists_modalities():
@@ -95,7 +96,7 @@ def test_one_unreadable_input_does_not_fail_the_check_in():
         def score_voice(self, path):
             raise RuntimeError("Format not recognised")
 
-    c = TestClient(create_app(BrokenVoice()))
+    c = TestClient(create_app(BrokenVoice(), AccountStore(":memory:"), verifier=None))
     sid = c.post("/sessions").json()["session_id"]
     r = c.post(
         f"/sessions/{sid}/observations",

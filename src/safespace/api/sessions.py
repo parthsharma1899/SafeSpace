@@ -1,8 +1,7 @@
-"""Per-session fusion state for the API.
+"""Guest sessions, kept in memory only (guest check-ins and the wearable bridge).
 
-Each check-in session has its own fusion engine, alert rule, resting baseline and
-history. Sessions expire after 30 minutes of inactivity. Nothing a user sends is
-written to disk here; only the resulting scores and timings are held in memory.
+A session holds its check-ins' scores in memory and is dropped after 30 minutes
+of inactivity. Signed-in accounts, whose scores are saved, live in `store.py`.
 """
 
 from __future__ import annotations
@@ -12,57 +11,38 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ..fusion import AlertRule, ResidualPersistenceV2, TUNED
-from ..sim.simulator import MODALITIES
-
-DT_SCALE = 30.0           # one "step" of fusion time = 30 real seconds
-SESSION_TTL = 30 * 60.0   # seconds of inactivity before a session is dropped
+SESSION_TTL = 30 * 60.0
 
 
 @dataclass
 class Session:
     session_id: str
-    fuser: ResidualPersistenceV2
-    alert: AlertRule
     created: float
     last_seen: float
     baseline: object = None  # a wrist Baseline, or None
-    history: list = field(default_factory=list)
-    _last_obs_time: Optional[float] = None
-
-    def dt_since_last(self, now: float) -> float:
-        if self._last_obs_time is None:
-            return 1.0
-        return max(1e-6, (now - self._last_obs_time) / DT_SCALE)
+    checkins: list = field(default_factory=list)  # (time, scores)
+    history: list = field(default_factory=list)   # responses, for GET /sessions/{id}
 
     def touch(self, now: float) -> None:
         self.last_seen = now
 
 
 class SessionStore:
-    def __init__(self, ttl: float = SESSION_TTL, clock=time.monotonic):
+    def __init__(self, ttl: float = SESSION_TTL, clock=time.time):
         self._ttl = ttl
         self._clock = clock
         self._sessions: dict[str, Session] = {}
 
     def _prune(self) -> None:
         now = self._clock()
-        dead = [sid for sid, s in self._sessions.items() if now - s.last_seen > self._ttl]
-        for sid in dead:
+        for sid in [sid for sid, s in self._sessions.items() if now - s.last_seen > self._ttl]:
             del self._sessions[sid]
 
     def create(self) -> Session:
         self._prune()
         now = self._clock()
-        sid = secrets.token_hex(16)
-        session = Session(
-            session_id=sid,
-            fuser=ResidualPersistenceV2(MODALITIES, TUNED),
-            alert=AlertRule(),
-            created=now,
-            last_seen=now,
-        )
-        self._sessions[sid] = session
+        session = Session(session_id=secrets.token_hex(16), created=now, last_seen=now)
+        self._sessions[session.session_id] = session
         return session
 
     def get(self, session_id: str) -> Optional[Session]:

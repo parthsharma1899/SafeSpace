@@ -1,0 +1,156 @@
+{
+  "repo": "parth18s/safespace-fusion-models",
+  "revision": "9cac0409beefde013f999c98fc00bcadee55606b",
+  "files": [
+    {
+      "path": "calibration.json",
+      "model": "calibration",
+      "size": 346,
+      "sha256": "8b7856cbe7f0c864a053a4c91e42729d24ad3cccd47f13135a3728985f35a8f5"
+    },
+    {
+      "path": "wrist/wrist_xgb.json",
+      "model": "wrist",
+      "size": 217136,
+      "sha256": "7145a8cfa1d4368d25859e25092c12bdf90d6d8d9973350833a7f0e897b2fbb9"
+    },
+    {
+      "path": "text/stress_classifier_epoch2/config.json",
+      "model": "text",
+      "size": 687,
+      "sha256": "e31a10710c64c92566900369603c5f2d7899c30ceb7b201bb8aa91874e32b528"
+    },
+    {
+      "path": "text/stress_classifier_epoch2/model.safetensors",
+      "model": "text",
+      "size": 437958648,
+      "sha256": "2bba8f34a0a96f761507c703b50f08d02395557bedc5d7de72c94f1d45c7818b"
+    },
+    {
+      "path": "text/stress_classifier_epoch2/special_tokens_map.json",
+      "model": "text",
+      "size": 125,
+      "sha256": "b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3"
+    },
+    {
+      "path": "text/stress_classifier_epoch2/tokenizer_config.json",
+      "model": "text",
+      "size": 1272,
+      "sha256": "7b082b48a08a0b5c5939d99472e33addce3d96202155e33f7928cecd171186a0"
+    },
+    {
+      "path": "text/stress_classifier_epoch2/vocab.txt",
+      "model": "text",
+      "size": 231508,
+      "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+    },
+    {
+      "path": "voice/speech_model.keras",
+      "model": "voice",
+      "size": 6930265,
+      "sha256": "6ed89287b8a6a549261222a4f9f040f7293ca7971ca3d998016ea6a960bdf001"
+    },
+    {
+      "path": "face/elm_hidden_f16.npz",
+      "model": "face",
+      "size": 613408724,
+      "sha256": "4efcf913ee56114a0ad5b2782fe348def5aeb714d762ffd321456af86dca0c0a"
+    },
+    {
+      "path": "face/features/scaler_mean.npy",
+      "model": "face",
+      "size": 1226880,
+      "sha256": "14f17d877fc5752e792c2cb126a4200812094a5f1d8b2371a3baf60f60336d47"
+    },
+    {
+      "path": "face/features/scaler_scale.npy",
+      "model": "face",
+      "size": 1226880,
+      "sha256": "25c212bd342c2e9faed6991921e1afb77360f11fb36e1ce6a3cac443c3bae88b"
+    },
+    {
+      "path": "face/refit/elm_B.npy",
+      "model": "face",
+      "size": 16128,
+      "sha256": "47b7649a0862003b4c7848d7d274dda1c89a53464e65bc1619ba1900ca1a4140"
+    },
+    {
+      "path": "face/refit/platt.json",
+      "model": "face",
+      "size": 51,
+      "sha256": "a7fe75d2d395d11089072c0e3ef75038f4e59843c138b66ca1eb63e2d23522d0"
+    },
+    {
+      "path": "face/refit/scaler_mean.npy",
+      "model": "face",
+      "size": 1226880,
+      "sha256": "ff54218082ae6c3aba26b937ce21cb006bcbb30e1143b89ca3fd1e77252ae107"
+    },
+    {
+      "path": "face/refit/scaler_std.npy",
+      "model": "face",
+      "size": 1226880,
+      "sha256": "91702a43b0b36499af2afa542a96cd85c5a6fa102412ae9bc0ba05effbde44a7"
+    },
+    {
+      "path": "face/resnet50_features/fingerprint.pb",
+      "model": "face",
+      "size": 78,
+      "sha256": "e99622c104990e9d077fbf62171c23c411584b22d221370fcc6e12a3359337fa"
+    },
+    {
+      "path": "face/resnet50_features/keras_metadata.pb",
+      "model": "face",
+      "size": 379316,
+      "sha256": "c161d8d0aa14b32c3832d59665705bec369f5c118ee14d00ddee4abc1182bfc6"
+    },
+    {
+      "path": "face/resnet50_features/saved_model.pb",
+      "model": "face",
+      "size": 2832266,
+      "sha256": "a9d1430f5f9503a2a876d564b693b0550497fdd49d22d2f3340cc5c967ad8c54"
+    },
+    {
+      "path": "face/resnet50_features/variables/variables.data-00000-of-00001",
+      "model": "face",
+      "size": 94505054,
+      "sha256": "ad89c413151a5faa3c0b64293bd702e1c5bd8968f79f593a7b9163f12c96137f"
+    },
+    {
+      "path": "face/resnet50_features/variables/variables.index",
+      "model": "face",
+      "size": 20025,
+      "sha256": "65906d9a381bb4c67d6cbe5c31bf8ef57d32c10cbdc83e7f45a2061414756c0a"
+    },
+    {
+      "path": "face/vit_features/fingerprint.pb",
+      "model": "face",
+      "size": 78,
+      "sha256": "28d9848c00edccaa21c876522b9fc3a9588bc1b34372befccd71dd55059b318b"
+    },
+    {
+      "path": "face/vit_features/keras_metadata.pb",
+      "model": "face",
+      "size": 387698,
+      "sha256": "df94c92d02db31583c66fbe6d2bf335962acae1aa956152c2cd95519d8546942"
+    },
+    {
+      "path": "face/vit_features/saved_model.pb",
+      "model": "face",
+      "size": 2520204,
+      "sha256": "d7164f9790f518cbf9cc598179f4b67ae85cdc2412b90398a37260ebda5ae0a8"
+    },
+    {
+      "path": "face/vit_features/variables/variables.data-00000-of-00001",
+      "model": "face",
+      "size": 343318829,
+      "sha256": "80d876e9be8d1cdb6169014dd1fed7b69e01f7e269b695f3d1d77d0ba5141ff7"
+    },
+    {
+      "path": "face/vit_features/variables/variables.index",
+      "model": "face",
+      "size": 9474,
+      "sha256": "6b803dcb3be0e451a4069faf889d41fc061804e24aa4940fe8963901ac1638a6"
+    }
+  ]
+}

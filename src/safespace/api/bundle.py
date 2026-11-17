@@ -30,7 +30,29 @@ def _calibrated(score: ModalityScore, ab) -> ModalityScore:
     return ModalityScore(round(apply_platt(score.score, a, b), 4), True)
 
 
+def installed() -> dict[str, bool]:
+    """Which models' weight files are present in artifacts/ (see scripts/download_models.py)."""
+    a = artifacts_dir()
+    face = a / "face"
+    return {
+        "wrist": (a / "wrist" / "wrist_xgb.json").is_file(),
+        "text": (a / "text" / "stress_classifier_epoch2" / "model.safetensors").is_file(),
+        "voice": (a / "voice" / "speech_model.keras").is_file(),
+        "face": (face / "refit" / "elm_B.npy").is_file()
+        and (face / "resnet50_features").is_dir()
+        and ((face / "elm_hidden_f16.npz").is_file() or (face / "elm_weights-001.npz").is_file()),
+    }
+
+
+NOT_INSTALLED = "model not installed"
+
+
 class RealBundle:
+    """The trained models. A model whose weights are missing reports every input
+    as unavailable instead of stopping the server."""
+
+    is_stub = False
+
     def __init__(self):
         from ..models.face import FaceModel
         from ..models.text import TextModel
@@ -41,47 +63,51 @@ class RealBundle:
         self._voice = VoiceModel()
         self._face = FaceModel()
         self._wrist = WristModel()
+        self._on = installed()
+        self._on["face"] = self._on["face"] and self._face.enabled
         cal = _load_calibration()
         self._cal = {m: (cal.get(m, {}).get("a", 1.0), cal.get(m, {}).get("b", 0.0)) for m in ("wrist", "text", "voice", "face")}
 
     def load(self) -> "RealBundle":
-        self._text.load()
-        self._voice.load()
-        self._wrist.load()
-        if self._face.enabled:
-            self._face.load()
+        for name, model in (("text", self._text), ("voice", self._voice), ("wrist", self._wrist), ("face", self._face)):
+            if self._on[name]:
+                model.load()
         return self
 
     def health(self) -> dict:
-        def ok(path_exists):
-            return "ready" if path_exists else "unavailable"
-
-        return {
-            "wrist": ok((artifacts_dir() / "wrist" / "wrist_xgb.json").exists()),
-            "text": ok((artifacts_dir() / "text" / "stress_classifier_epoch2" / "config.json").exists()),
-            "voice": ok((artifacts_dir() / "voice" / "speech_model.keras").exists()),
-            "face": "ready" if self._face.enabled else "disabled",
-        }
+        return {m: "ready" if on else "not installed" for m, on in self._on.items()}
 
     def score_text(self, text) -> ModalityScore:
+        if not self._on["text"]:
+            return ModalityScore(None, False, NOT_INSTALLED)
         return _calibrated(self._text.predict(text), self._cal["text"])
 
     def score_voice(self, path) -> ModalityScore:
+        if not self._on["voice"]:
+            return ModalityScore(None, False, NOT_INSTALLED)
         return _calibrated(self._voice.predict(path), self._cal["voice"])
 
     def score_face(self, path) -> ModalityScore:
+        if not self._on["face"]:
+            return ModalityScore(None, False, NOT_INSTALLED)
         return _calibrated(self._face.predict(path), self._cal["face"])
 
     def calibrate_wrist(self, pulse, conductance, rate_pulse, rate_conductance):
+        if not self._on["wrist"]:
+            return None
         return self._wrist.calibrate(pulse, conductance, rate_pulse, rate_conductance)
 
     def score_wrist(self, pulse, conductance, rate_pulse, rate_conductance, baseline) -> ModalityScore:
+        if not self._on["wrist"]:
+            return ModalityScore(None, False, NOT_INSTALLED)
         return _calibrated(self._wrist.predict(pulse, conductance, rate_pulse, rate_conductance, baseline), self._cal["wrist"])
 
 
 class StubBundle:
     """Fixed, weight-free models for tests. `scores` maps a modality to a number
     (or None to make it report unavailable)."""
+
+    is_stub = True
 
     def __init__(self, scores: Optional[dict] = None, face_enabled: bool = True):
         self.scores = scores or {"wrist": 0.6, "text": 0.5, "voice": 0.4, "face": 0.3}

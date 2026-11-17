@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -29,10 +30,22 @@ from .base import ModalityScore, artifacts_dir
 
 _ON = {"1", "true", "yes", "on"}
 _OFF = {"0", "false", "no", "off"}
+COMPACT_ELM = "elm_hidden_f16.npz"
+_ROWS = 16384
 
 
 def _safe_divide(a, b):
     return np.divide(a, b, out=np.zeros_like(a), where=b != 0)
+
+
+def hidden_input(x, W):
+    """x @ W, multiplying a float16 W in row blocks so it is never copied whole."""
+    if W.dtype != np.float16:
+        return x @ W
+    out = np.zeros(W.shape[1], np.float64)
+    for i in range(0, W.shape[0], _ROWS):
+        out += x[i:i + _ROWS].astype(np.float64) @ W[i:i + _ROWS].astype(np.float64)
+    return out
 
 
 class FaceModel:
@@ -69,7 +82,7 @@ class FaceModel:
         import cv2
         import tensorflow as tf
 
-        elm = np.load(self._dir / "elm_weights-001.npz")
+        elm = np.load(self.elm_path())
         resnet = tf.saved_model.load(str(self._dir / "resnet50_features"))
         vit = tf.saved_model.load(str(self._dir / "vit_features"))
         c = {
@@ -91,6 +104,15 @@ class FaceModel:
         c["orig_B"] = elm["B"]
         self._c = c
         return self
+
+    def elm_path(self) -> Path:
+        """The ELM hidden layer: the compact float16 copy if present, else the original.
+
+        The compact file (scripts/compact_face_elm.py) stores W in float16, a
+        quarter of the original's 2.45 GB; scores differ by under 0.001.
+        """
+        compact = self._dir / COMPACT_ELM
+        return compact if compact.exists() else self._dir / "elm_weights-001.npz"
 
     def _features(self, face_bgr, refit: bool):
         import cv2
@@ -114,12 +136,12 @@ class FaceModel:
         f = self._features(face_bgr, refit)
         if refit:
             fn = (f - c["mean"]) / c["std"]
-            z = fn @ c["W"] + c["b"]
+            z = hidden_input(fn, c["W"]) + c["b"]
             raw = (np.maximum(0.01 * z, z) @ c["B"]).item()
             a, b = c["platt"]
             return float(1.0 / (1.0 + np.exp(-(a * raw + b))))
         fn = _safe_divide(f - c["orig_mean"], c["orig_scale"])
-        z = fn @ c["W"] + c["b"]
+        z = hidden_input(fn, c["W"]) + c["b"]
         return float(np.clip((np.maximum(0.01 * z, z) @ c["orig_B"]).item(), 0, 1))
 
     def predict(self, image_path) -> ModalityScore:

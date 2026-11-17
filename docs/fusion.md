@@ -80,7 +80,7 @@ fell together the weights summed to zero and the formula failed.
    not learned as "normal".
 2. **A new person's baseline can start from a typical calm value** per signal
    (the app uses each model's average score on calm examples) and becomes the
-   person's own after 5 readings.
+   person's own after a 5-reading warmup (from the 6th reading on).
 3. **Residuals are measured in each signal's own units of normal wobble**, so a
    jump that is ordinary for a noisy signal is not mistaken for a spike.
 4. **A deadband:** change within a signal's normal wobble adds no weight, so at
@@ -211,5 +211,8 @@ It is kept in `src/safespace/fusion/v2.py` as a comparison.
 - Whether "one signal leads" or "all signals agree" is closer to real people is
   exactly what those datasets will decide, and it determines whether v3's
   strength or its weak spot matters more.
-- In the web app, the baseline builds over a person's check-ins. Until a
-  person has 5 check-ins, a result is close to the plain average.
+- In the web app, the baseline builds over a person's saved check-ins
+  (`src/safespace/api/tracker.py`). A signal's baseline is the person's own
+  after 6 readings of it (more than the 5-reading warmup); until then a result
+  is close to the plain average, starting from each model's calm score
+  (`results/calibration.md`).

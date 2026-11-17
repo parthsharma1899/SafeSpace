@@ -65,7 +65,20 @@ export const CheckIcon = () => (
   </svg>
 );
 
-export const Logo = ({ size = 30 }: { size?: number }) => (
+export const ChartIcon = () => (
+  <svg {...base}>
+    <path d="M4 19h16M6 15l4-4 3 3 5-6" />
+  </svg>
+);
+
+export const UserIcon = () => (
+  <svg {...base}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4.5 20c1.4-3.6 4.2-5.2 7.5-5.2s6.1 1.6 7.5 5.2" />
+  </svg>
+);
+
+export const Logo =({ size = 30 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
     <rect width="32" height="32" rx="9" fill="var(--brand)" />
     <path d="M7 18c3-5 6-5 9 0s6 5 9 0" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />

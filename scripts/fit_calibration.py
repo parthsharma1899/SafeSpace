@@ -79,6 +79,25 @@ def main() -> None:
         "",
     ]
 
+    # Calm prior: each model's average calibrated score on its not-stressed held-out
+    # examples. The web app starts a new person's baseline there (v3 calm_prior).
+    calm_sources = {
+        "wrist": (RESULTS / "wrist_loso.csv", "oof_score", "target"),
+        "text": (RESULTS / "text_eval.csv", "score", "label"),
+        "voice": (ROOT / "data" / "cache" / "voice_scores.csv", "score", "stressed"),
+        "face": (ROOT / "data" / "cache" / "face_scores.csv", "score", "stressed"),
+    }
+    report += ["Calm prior (average calibrated score on not-stressed held-out examples):", ""]
+    for m, (path, score_col, label_col) in calm_sources.items():
+        if not path.exists():
+            report += [f"- {m}: no scores found; none set"]
+            continue
+        s, y = read_csv_cols(path, score_col, label_col)
+        calm = np.array([apply_platt(v, cal[m]["a"], cal[m]["b"]) for v in s[y == 0]])
+        cal[m]["calm_prior"] = round(float(calm.mean()), 4)
+        report += [f"- **{m}**: {cal[m]['calm_prior']:.4f} (n = {len(calm)})"]
+    report += [""]
+
     (artifacts_dir() / "calibration.json").write_text(json.dumps(cal, indent=2))
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / "calibration.md").write_text("\n".join(report))

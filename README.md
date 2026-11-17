@@ -6,8 +6,48 @@ is available into one score over time.
 
 > **Research demo, not a diagnostic tool.** The models are proxies (facial
 > expression and acted speech are not stress), the datasets are small, and no
-> result here should be used to make a decision about a real person. Nothing a
-> user enters in the demo is stored.
+> result here should be used to make a decision about a real person. What a
+> person writes, says or shows the camera is never stored; for signed-in users,
+> only the scores are kept.
+
+## Aim and vision
+
+**The aim:** measure stress **continuously, relative to each person's own
+normal**. Stress shows up differently in different people: one person's calm
+voice is another's tense one. A single reading compared with a population
+average says little; a change from *your* usual level, which lasts, says much
+more.
+
+**The vision:** SafeSpace runs in the background of a person's day. A wearable
+streams wrist signals, and short check-ins add words, voice and a face photo.
+For every signal SafeSpace learns the person's **baseline**, notices a
+**residual** (a jump away from it), and gives more weight to a jump that
+**persists**. The fused score follows the signals that have moved away from
+that person's normal and stayed there, and a lasting rise prompts support
+before stress builds up.
+
+**What this repository does today:**
+
+- **Every check-in is saved per person.** A person signs in (email and password,
+  via Supabase), agrees to have their scores kept, and each check-in's scores
+  are stored under their account. Only numbers and times are stored, never the
+  words, recording or photo.
+- **The residual and persistence are computed across logins.** On every
+  check-in, the person's whole history is replayed through the fusion (v3), so
+  their baseline, residuals and persistence build from one visit to the next.
+  Time between visits counts: persistence fades over a day or two without a
+  check-in, while the baseline builds over many.
+- **The baseline is learned after 6 check-ins per signal.** Until then a result
+  is close to a simple average of the signals, starting from each model's
+  typical calm score; the app shows progress for each signal. After that, each
+  result also says how far it is from the person's usual level, and the alert
+  follows that change.
+- **Guests can try a single check-in** without an account; nothing is saved,
+  and results are not compared with a baseline.
+
+**Not there yet:** continuous wrist streaming in the web app (the API and
+`scripts/wearable_bridge.py` support it), testing on real people recorded with
+several signals at once, and a deployed server. See [Further steps](#further-steps).
 
 ## What's in it
 
@@ -20,8 +60,10 @@ is available into one score over time.
   card in `docs/models/`.
 - **A web app** (`web/`, React) on a **FastAPI backend** (`src/safespace/api/`):
   a one-minute stress check-in from what you write, a sentence read aloud and a
-  selfie, with a results screen that shows what each signal picked up and a
-  guided breathing exercise.
+  selfie, with a results screen that shows what each signal picked up, how the
+  result compares with your usual level, your recent check-ins and a guided
+  breathing exercise. Sign-in is by Supabase; accounts can delete their data at
+  any time.
 
 ## Results
 
@@ -95,14 +137,56 @@ python scripts/fit_calibration.py              # results/calibration.md
 python scripts/run_virtual_subjects.py         # results/virtual_subjects.md
 ```
 
+## Get the models
+
+The trained weights (about 1.5 GB) are hosted in a **private** Hugging Face
+repository while the dataset permissions are pending (see
+[Further steps](#further-steps)). Ask the maintainer for access, then:
+
+```bash
+hf auth login                          # once, with the account given access
+python scripts/download_models.py      # into artifacts/, every file checked
+python scripts/download_models.py --models text,voice   # or just some
+```
+
+Each file is checked against the size and SHA-256 listed in
+`scripts/model_manifest.json`, at the Hub revision recorded there. Without the
+weights the app still runs, in **demo mode**: every check-in returns the same
+sample scores and the app shows a banner saying so. With only some models
+downloaded, the others show as unavailable.
+
+Maintainers publish new weights with `python scripts/upload_models.py`, which
+also rewrites the manifest (commit it). The face model's ELM layer is stored at
+half precision (`scripts/compact_face_elm.py`): 0.61 GB instead of 2.45 GB,
+same AUC, scores within 0.0002 (`results/face_compact.md`).
+
 ## Run the app
 
 ```bash
+cp .env.example .env                   # then fill in the two Supabase values
 # backend (localhost only, no debug)
 uvicorn safespace.api.app:app --host 127.0.0.1 --port 8080
 # web app, then open http://localhost:5173
 cd web && npm install && npm run dev
 ```
+
+**Sign-in (Supabase).** In the Supabase dashboard of your project:
+
+1. Copy the **Project URL** and the **publishable key** (Project Settings, API
+   Keys) into `.env` as `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. Both are
+   public values. Never put the secret (service_role) key in this repo or in
+   `.env`; the app does not need it.
+2. Under Authentication, URL Configuration, set the **Site URL** to
+   `http://localhost:5173`, so confirmation and password-reset emails link back
+   to the app.
+3. Email sign-in is on by default. Supabase's built-in email sender allows only
+   a few emails an hour; for real users, set up custom SMTP.
+
+The server checks each request's sign-in token against the project's public
+signing keys, so it needs no Supabase secret. The web app gets both values from
+the API (`/config`), so it has no build settings. Without them, the app offers
+guest check-ins only. Saved scores live in SQLite at `data/app/safespace.db` (or
+`SAFESPACE_DB`).
 
 The web app calls the API at `/api`, which the dev server forwards to port 8080
 (set `SAFESPACE_API` to forward elsewhere, or `VITE_API_URL` to call another
@@ -110,10 +194,9 @@ host directly). Camera and microphone need a secure page, so open it at
 `localhost`, not a network address. Voice is converted to WAV in the browser, so
 the server needs no audio codecs.
 
-Set `SAFESPACE_API_STUB=1` to run the API with fixed stub scores and no weights.
-For the High-stress support message, set `GEMINI_API_KEY` and `GEMINI_MODEL`
-(without them, a fixed message is used). The ESP32 wearable streams through
-`scripts/wearable_bridge.py`.
+Set `SAFESPACE_API_STUB=1` to force demo mode. For the High-stress support
+message, set `GEMINI_API_KEY` and `GEMINI_MODEL` (without them, a fixed message
+is used). The ESP32 wearable streams through `scripts/wearable_bridge.py`.
 
 ## Ethics and limits
 
@@ -121,11 +204,13 @@ For the High-stress support message, set `GEMINI_API_KEY` and `GEMINI_MODEL`
 - The wrist model is validated on 15 lab subjects on one device; the text model
   may have seen its test posts in training; the voice test shares speakers across
   train and test. Each card states its own limits.
-- The app stores nothing and runs models in memory; uploads are deleted before
-  the response returns. Only the scores of a visit are kept in memory, for 30
-  minutes.
-- A result blends in readings from check-ins made in the last few minutes (the
-  fusion is built for streams); the results screen says which ones it used.
+- Words, recordings and photos are scored in memory and deleted before the
+  response returns; they are never stored.
+- For a signed-in person who has agreed, the scores of each check-in (one number
+  per signal) and its time are stored under their Supabase user id; no name or
+  email is stored by SafeSpace. "Delete my data" on the account page removes
+  all of it. Deleting the sign-in itself needs the Supabase dashboard.
+- Guest check-ins are kept in memory only, for 30 minutes.
 
 ## Further steps
 
@@ -144,8 +229,8 @@ step-by-step detail and `docs/progress.md` records what is already done.
 | Permission to publish the face model (FER-2013) | FER-2013 is distributed through Kaggle's competition rules with no clear licence, and the images may not be re-hosted. Check the Kaggle rules before publishing the re-fitted face weights. | Unconfirmed |
 | Permission to publish the text model (Dreaddit) | No licence is stated for Dreaddit, and it is built from Reddit posts, so Reddit's content terms also apply. Ask the authors before publishing the text weights. | Unconfirmed |
 
-Publishing the weights matters: `artifacts/` is not hosted anywhere, so a fresh
-clone cannot run the real models until they are.
+These permissions decide whether the weights can be public. Until then the
+Hugging Face repository stays private and access is given person by person.
 
 **For new data**
 
@@ -164,9 +249,8 @@ clone cannot run the real models until they are.
 
 ### Work left
 
-1. **Host the model weights** once the permissions above allow, and add a
-   download script. The old Hugging Face helpers in `legacy/` point at the
-   previous folder layout.
+1. **Make the model weights public** once the permissions above allow (they are
+   hosted privately now; see [Get the models](#get-the-models)).
 2. **Test the fusion on real same-person data**: UBFC-Phys, then StressID
    (PLAN.md steps 4.2 and 4.3). So far it is tested on simulated sessions and on
    scores paired across different people.
@@ -182,12 +266,14 @@ clone cannot run the real models until they are.
    a trained ViT (current AUC 0.70 comes mainly from ResNet). Voice: evaluate
    with whole actors held out, for an honest score on new speakers. Text:
    re-evaluate on posts the model has never seen.
-6. **Decide what the fusion should favour.** v2 ties a tuned smoothed mean when
-   every signal is reliable, and loses when only one signal notices the stress
+6. **Check v3's assumption on real people.** v3 wins when one signal shows a
+   lasting change first and is weakest when a sensor sticks high
    (`docs/fusion.md`). Real same-person data will show which case is more common.
 7. **Deploy** the API and web app on one HTTPS address; browsers allow the
-   camera and microphone only on HTTPS or `localhost`. Sessions live in memory,
-   so run one server process or move sessions to a shared store.
+   camera and microphone only on HTTPS or `localhost`. Add the deployed address
+   to Supabase's allowed redirect URLs. Saved scores are in SQLite and guest
+   sessions in memory, so run one server process, or move scores to Supabase's
+   Postgres with row-level security for more.
 8. **Revise the paper** from `docs/claims.md`, which lists every claim in the
    draft with its current status (PLAN.md Phase 9).
 

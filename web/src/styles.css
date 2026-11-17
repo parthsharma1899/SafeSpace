@@ -188,6 +188,52 @@ textarea::placeholder { color: var(--muted); }
 .trend-dot.low { fill: var(--low); } .trend-dot.medium { fill: var(--medium); } .trend-dot.high { fill: var(--high); }
 .trend figcaption { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; padding: 4px 4px 0; }
 
+/* Top bar, demo banner */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.btn.small { padding: 7px 14px; font-size: 0.9rem; }
+.btn.small svg { width: 18px; height: 18px; }
+.btn.danger { background: var(--high-soft); color: var(--high); }
+.btn.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--high-soft) 80%, var(--high)); }
+.btn.link.inline { padding: 0; font-size: inherit; }
+.btn:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 45%, transparent); outline-offset: 2px; }
+.demo-banner {
+  max-width: 640px; width: calc(100% - 32px); margin: 14px auto 0; padding: 10px 14px; border-radius: 12px;
+  background: var(--medium-soft); color: var(--ink); font-size: 0.9rem;
+}
+.center { text-align: center; padding-top: 10vh; }
+.banner.info { background: var(--brand-soft); color: var(--ink); }
+
+/* Sign-in, consent, account */
+.auth, .consent, .account, .home { display: grid; gap: 18px; }
+.form label { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+.form small { font-weight: 400; }
+input[type="email"], input[type="password"] {
+  font: inherit; font-weight: 400; width: 100%; padding: 11px 14px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--ink);
+}
+.form .btn { justify-self: start; }
+.auth-links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.plain-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.plain-list li { display: flex; gap: 12px; align-items: flex-start; }
+.plain-list svg { flex: none; color: var(--brand); margin-top: 2px; }
+.confirm { display: grid; gap: 12px; padding: 14px; border-radius: 12px; background: var(--high-soft); }
+.confirm .btn.danger { background: var(--high); color: #fff; }
+.confirm .btn.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--high) 85%, #000); }
+.confirm .btn.ghost { background: var(--surface); }
+.home > .btn.big { justify-self: start; }
+.big-number { font-size: 2rem; font-variant-numeric: tabular-nums; }
+
+/* Baseline progress and change from normal */
+.baseline { display: grid; gap: 12px; }
+.baseline-row { display: grid; gap: 6px; font-size: 0.95rem; }
+.steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.steps span { height: 8px; border-radius: 99px; background: var(--surface-2); }
+.steps span.done { background: var(--brand); }
+.compare { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 14px; border-radius: 12px; }
+.compare.low { background: var(--low-soft); } .compare.medium { background: var(--medium-soft); } .compare.high { background: var(--high-soft); }
+.compare-value { font-weight: 750; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.compare-value small { font-weight: 500; font-size: 0.85rem; color: var(--muted); }
+
 /* Breathing */
 .modal-backdrop { position: fixed; inset: 0; background: rgb(10 10 9 / 0.55); display: grid; place-items: center; padding: 16px; z-index: 10; }
 .modal { position: relative; background: var(--surface); border-radius: 22px; padding: 32px 24px; width: min(100%, 420px); display: grid; gap: 10px; justify-items: center; text-align: center; box-shadow: var(--shadow); }
