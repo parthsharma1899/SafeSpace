@@ -139,15 +139,18 @@ python scripts/run_virtual_subjects.py         # results/virtual_subjects.md
 
 ## Get the models
 
-The trained weights (about 1.5 GB) are hosted in a **private** Hugging Face
-repository while the dataset permissions are pending (see
-[Further steps](#further-steps)). Ask the maintainer for access, then:
+The trained weights (about 1.5 GB) are in a public Hugging Face repository,
+[parth18s/safespace-fusion-models](https://huggingface.co/parth18s/safespace-fusion-models).
+No account or login is needed:
 
 ```bash
-hf auth login                          # once, with the account given access
 python scripts/download_models.py      # into artifacts/, every file checked
 python scripts/download_models.py --models text,voice   # or just some
 ```
+
+The weights are for **non-commercial research and personal use**: they inherit
+the terms of the datasets they were trained on (see
+[Licences and permissions](#licences-and-permissions-to-get)).
 
 Each file is checked against the size and SHA-256 listed in
 `scripts/model_manifest.json`, at the Hub revision recorded there. Without the
@@ -232,13 +235,14 @@ step-by-step detail and `docs/progress.md` records what is already done.
 | What to get | Why it is needed | Status |
 |---|---|---|
 | A licence for this code, such as MIT or Apache-2.0 | Without one the repository is "all rights reserved": nobody, including outside collaborators, may legally reuse, change or redistribute the code. MIT is the usual choice for research code; Apache-2.0 adds an explicit patent grant. | Not chosen |
-| Permission to publish the voice model (RAVDESS) | RAVDESS is CC BY-NC-SA 4.0: free for non-commercial research with credit, and anything derived must be shared on the same terms. Commercial use needs a paid licence from the authors (ravdess@gmail.com). | Terms known |
-| Permission to publish the wrist model (WESAD) | WESAD's readme asks only that publications cite Schmidt et al. (2018) and gives no redistribution terms. Ask the authors before publishing weights trained on it. | Ask authors |
-| Permission to publish the face model (FER-2013) | FER-2013 is distributed through Kaggle's competition rules with no clear licence, and the images may not be re-hosted. Check the Kaggle rules before publishing the re-fitted face weights. | Unconfirmed |
-| Permission to publish the text model (Dreaddit) | No licence is stated for Dreaddit, and it is built from Reddit posts, so Reddit's content terms also apply. Ask the authors before publishing the text weights. | Unconfirmed |
+| Permission for the voice model (RAVDESS) | RAVDESS is CC BY-NC-SA 4.0: free for non-commercial research with credit, and anything derived must be shared on the same terms. Commercial use needs a paid licence from the authors (ravdess@gmail.com). | Terms known; published under them |
+| Permission for the wrist model (WESAD) | WESAD's readme asks only that publications cite Schmidt et al. (2018) and gives no redistribution terms. Confirm with the authors that publishing weights trained on it is fine. | Published; ask authors |
+| Permission for the face model (FER-2013) | FER-2013 is distributed through Kaggle's competition rules with no clear licence, and the images may not be re-hosted (the weights do not contain images). Check the Kaggle rules for trained weights. | Published; unconfirmed |
+| Permission for the text model (Dreaddit) | No licence is stated for Dreaddit, and it is built from Reddit posts, so Reddit's content terms also apply. Confirm with the authors. | Published; unconfirmed |
 
-These permissions decide whether the weights can be public. Until then the
-Hugging Face repository stays private and access is given person by person.
+The weights were made public on 2026-11-18 for non-commercial research use.
+If any dataset's authors object, make the Hugging Face repository private again
+(its settings page) and `download_models.py` will ask for a login.
 
 **For new data**
 
@@ -257,8 +261,7 @@ Hugging Face repository stays private and access is given person by person.
 
 ### Work left
 
-1. **Make the model weights public** once the permissions above allow (they are
-   hosted privately now; see [Get the models](#get-the-models)).
+1. **Confirm the dataset permissions** for the published weights (table above).
 2. **Test the fusion on real same-person data**: UBFC-Phys, then StressID
    (PLAN.md steps 4.2 and 4.3). So far it is tested on simulated sessions and on
    scores paired across different people.
@@ -277,11 +280,20 @@ Hugging Face repository stays private and access is given person by person.
 6. **Check v3's assumption on real people.** v3 wins when one signal shows a
    lasting change first and is weakest when a sensor sticks high
    (`docs/fusion.md`). Real same-person data will show which case is more common.
-7. **Deploy** the API and web app on one HTTPS address; browsers allow the
-   camera and microphone only on HTTPS or `localhost`. Add the deployed address
-   to Supabase's allowed redirect URLs. Saved scores are in SQLite and guest
-   sessions in memory, so run one server process, or move scores to Supabase's
-   Postgres with row-level security for more.
+7. **Host the app online** so people can use it without installing anything.
+   The hosted version is built and tested but not running: Hugging Face now
+   charges for Docker Spaces (PRO, about $9 a month), and the project is
+   staying free for now. When a host is chosen:
+   - `deploy/space/` holds the Docker build (API and web app on one HTTPS
+     address, models downloaded at start-up) and `scripts/deploy_space.py`
+     publishes it to a Space; it runs on any Docker host with small changes.
+   - Saved scores move to Supabase's Postgres: run `deploy/supabase.sql` once in
+     the Supabase SQL Editor and set `SAFESPACE_STORE=supabase`. Each request
+     acts as the signed-in person, so row-level security keeps people to their
+     own rows.
+   - Add the address to Supabase's redirect URLs and Google's authorised
+     JavaScript origins. Browsers allow the camera and microphone only on HTTPS
+     or `localhost`.
 8. **Revise the paper** from `docs/claims.md`, which lists every claim in the
    draft with its current status (PLAN.md Phase 9).
 

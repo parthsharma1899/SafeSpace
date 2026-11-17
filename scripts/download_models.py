@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Download the trained model weights into artifacts/ and check them.
 
-    hf auth login                         # once; the model repo is private
     python scripts/download_models.py     # all four models (about 1.5 GB)
     python scripts/download_models.py --models text,voice
 
 Files come from the Hugging Face repo in $SAFESPACE_MODELS_REPO (default
 parth18s/safespace-fusion-models) at the revision recorded in
 scripts/model_manifest.json, and each one is checked against the size and
-SHA-256 listed there. The repo is private while dataset permissions are
-pending (README, "Further steps"); ask the maintainer for access.
+SHA-256 listed there. The repo is public: no account or login is needed.
+Use is limited to non-commercial research by the datasets' terms (README).
 
 Without the weights the API still runs, in demo mode with fixed scores.
 """
@@ -56,8 +55,9 @@ def main() -> int:
         )
     except (RepositoryNotFoundError, GatedRepoError):
         print(
-            "\nCould not open the model repo. It is private: sign in with `hf auth login`\n"
-            "using an account that has been given access, then run this again.",
+            f"\nCould not open the model repo {repo_id()}. Check your internet connection and\n"
+            "that the repo id is right; if it has been made private, sign in with\n"
+            "`hf auth login` using an account that has access.",
             file=sys.stderr,
         )
         return 1

@@ -19,15 +19,19 @@ under `docs/models/` in the code repository.
 
 ## Download
 
-This repository is private while dataset permissions are pending. With access:
+No account or login is needed. From the SafeSpace code repository:
 
 ```bash
-hf auth login
-python scripts/download_models.py      # from the SafeSpace code repository
+python scripts/download_models.py      # all four models, about 1.5 GB
 ```
 
 The script downloads into `artifacts/` and checks every file against the sizes
-and SHA-256 hashes in `scripts/model_manifest.json`.
+and SHA-256 hashes in `scripts/model_manifest.json`. Then follow the code
+repository's README to run the app locally.
+
+**Terms of use:** non-commercial research and personal use only. The weights
+were trained on datasets with their own terms (below); RAVDESS in particular is
+CC BY-NC-SA 4.0, which rules out commercial use.
 
 ## Files
 
