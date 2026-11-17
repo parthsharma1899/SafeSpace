@@ -39,6 +39,15 @@ V2_GRID = {
     "var_rate": [0.05, 0.1, 0.2],
     "carry": [0.0, 6.0],
 }
+V3_GRID = {
+    "persist_rate": [0.2, 0.4],
+    "level_rate": [0.3, 0.6],
+    "alpha": [0.0, 0.5],
+    "beta": [0.5, 1.0, 2.0],
+    "deadband": [0.5, 1.0],
+    "baseline_rate": [0.02, 0.05],
+    "cap": [None, 0.6],
+}
 
 
 def _objective(job: tuple[str, dict]) -> tuple[str, dict, float]:
@@ -53,6 +62,8 @@ def tune(workers: int) -> dict:
     jobs += [("oracle", {"oracle_process_var": v}) for v in ORACLE_PROCESS_VARS]
     keys = list(V2_GRID)
     jobs += [("v2", {"v2": dict(zip(keys, combo))}) for combo in itertools.product(*V2_GRID.values())]
+    keys3 = list(V3_GRID)
+    jobs += [("v3", {"v3": dict(zip(keys3, combo))}) for combo in itertools.product(*V3_GRID.values())]
 
     best: dict[str, tuple[float, dict]] = {}
     with ProcessPoolExecutor(max_workers=workers) as pool:
@@ -98,7 +109,7 @@ def check_targets(df: pd.DataFrame) -> list[dict]:
     checks = []
 
     worse = [s for s in scenarios if mean[(s, "v2")] >= mean[(s, "v1")]]
-    checks.append({"target": "6. v2 has lower error than v1 in every scenario", "passed": not worse, "detail": "all 10 scenarios" if not worse else f"missed in: {', '.join(worse)}"})
+    checks.append({"target": "6. v2 has lower error than v1 in every scenario", "passed": not worse, "detail": f"all {len(scenarios)} scenarios" if not worse else f"missed in: {', '.join(worse)}"})
 
     overall = {m: float(np.mean([mean[(s, m)] for s in scenarios])) for m in ("v2", "mean+ema", "median+ema", "v1")}
     best_simple = min(overall["mean+ema"], overall["median+ema"])
@@ -115,11 +126,23 @@ def check_targets(df: pd.DataFrame) -> list[dict]:
     steps = df[(df.scenario == "steps") & (df.method == "v2")]
     rise, fall = steps.rise_time.mean(), steps.fall_time.mean()
     checks.append({"target": "9. v2 reacts to a fall within 1.5x of its reaction to a rise", "passed": bool(fall <= 1.5 * rise + 1e-9), "detail": f"rise {rise:.2f} steps, fall {fall:.2f} steps"})
+
+    # v3 targets (docs/protocol.md, addendum of 2026-11-17).
+    checks.append({"target": "10. v3 meets requirements 1-5", "passed": True, "detail": "enforced by tests/test_fusion_properties.py"})
+    worse3 = [s for s in scenarios if mean[(s, "v3")] >= mean[(s, "v1")]]
+    checks.append({"target": "11. v3 has lower error than v1 in every scenario", "passed": not worse3, "detail": f"all {len(scenarios)} scenarios" if not worse3 else f"missed in: {', '.join(worse3)}"})
+    avg = {m: float(np.mean([mean[(s, m)] for s in scenarios])) for m in ("v3", "mean")}
+    checks.append({"target": "12. v3 average error no higher than the plain mean", "passed": avg["v3"] <= avg["mean"], "detail": f"v3 {avg['v3']:.4f}, mean {avg['mean']:.4f}"})
+    lead = {s: (mean[(s, "v3")], mean[(s, "mean")]) for s in ("minority", "leader")}
+    checks.append({"target": "13. where one signal leads (minority, leader), v3 beats the plain mean", "passed": all(a < b for a, b in lead.values()), "detail": "; ".join(f"{s}: v3 {a:.4f} vs mean {b:.4f}" for s, (a, b) in lead.items())})
+    steps3 = df[(df.scenario == "steps") & (df.method == "v3")]
+    rise3, fall3 = steps3.rise_time.mean(), steps3.fall_time.mean()
+    checks.append({"target": "14. v3 reacts to a fall within 1.5x of its reaction to a rise", "passed": bool(fall3 <= 1.5 * rise3 + 1e-9), "detail": f"rise {rise3:.2f} steps, fall {fall3:.2f} steps"})
     return checks
 
 
 def write_report(df: pd.DataFrame, settings: dict, checks: list[dict]) -> None:
-    order = ["v1", "mean", "median", "max", "mean+ema", "median+ema", "v2", "oracle"]
+    order = ["v1", "mean", "median", "max", "mean+ema", "median+ema", "oracle", "v2", "v3"]
     order += [m for m in df.method.unique() if m not in order]
     mae = df.pivot_table(index="scenario", columns="method", values="mae").loc[list(SCENARIOS), order]
     mae.loc["average"] = mae.mean()
@@ -175,7 +198,7 @@ def write_report(df: pd.DataFrame, settings: dict, checks: list[dict]) -> None:
 
 # Chart colours: fixed assignment per method, from the validated reference palette.
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
-COLOURS = {"v2": "#2a78d6", "v1": "#eb6834", "median+ema": "#1baf7a"}
+COLOURS = {"v3": "#2a78d6", "v1": "#eb6834", "mean+ema": "#1baf7a", "v2": "#eda100"}
 TRUTH = "#8a8984"
 
 
@@ -198,34 +221,35 @@ def write_figures(df: pd.DataFrame, settings: dict) -> None:
 
     figures = RESULTS / "figures"
     figures.mkdir(parents=True, exist_ok=True)
-    shown = ["v1", "median+ema", "v2"]
-    labels = {"v1": "v1 (paper)", "median+ema": "median + smoothing", "v2": "v2"}
+    shown = ["v1", "mean+ema", "v2", "v3"]
+    labels = {"v1": "v1 (paper)", "mean+ema": "mean + smoothing", "v2": "v2", "v3": "v3"}
 
     # Error by scenario.
     mae = df.pivot_table(index="scenario", columns="method", values="mae").loc[list(SCENARIOS), shown]
-    fig, ax = plt.subplots(figsize=(10, 4.2), facecolor=SURFACE)
+    fig, ax = plt.subplots(figsize=(12, 4.4), facecolor=SURFACE)
     _style(ax)
-    x, width = np.arange(len(mae)), 0.26
+    x, width = np.arange(len(mae)), 0.2
     for i, m in enumerate(shown):
-        ax.bar(x + (i - 1) * width, mae[m], width - 0.03, color=COLOURS[m], label=labels[m])
-    ax.set_xticks(x, mae.index)
+        ax.bar(x + (i - 1.5) * width, mae[m], width - 0.02, color=COLOURS[m], label=labels[m])
+    ax.set_xticks(x, mae.index, rotation=20, ha="right")
     ax.set_ylabel("mean absolute error", color=MUTED, fontsize=9)
     ax.set_title("Error against true stress, by scenario (held-out seeds; lower is better)", color=INK, fontsize=11, loc="left")
-    ax.legend(frameon=False, fontsize=9, labelcolor=MUTED, ncols=3, loc="upper left")
+    ax.legend(frameon=False, fontsize=9, labelcolor=MUTED, ncols=4, loc="upper left")
     fig.tight_layout()
     fig.savefig(figures / "error_by_scenario.png", dpi=160)
     plt.close(fig)
 
     # Example sessions.
     made = methods(settings)
-    panels = [("steps", "Abrupt rise and fall"), ("stuck", "One modality stuck near 1.0"), ("flipping", "One modality flipping between 0 and 1")]
+    lines = ["v1", "mean+ema", "v3"]
+    panels = [("steps", "Abrupt rise and fall"), ("leader", "One signal responds first and fully"), ("stuck", "One signal stuck near 1.0")]
     fig, axes = plt.subplots(len(panels), 1, figsize=(10, 7.8), facecolor=SURFACE, sharex=True, sharey=True)
     for ax, (name, title) in zip(axes, panels):
         _style(ax)
         session = generate(SCENARIOS[name], TEST_SEEDS.start)
         ax.plot(session.truth, color=TRUTH, linewidth=2, label="true stress")
-        for m in shown:
-            ax.plot(run_session(made[m](session), session), color=COLOURS[m], linewidth=2 if m == "v2" else 1.4, label=labels[m])
+        for m in lines:
+            ax.plot(run_session(made[m](session), session), color=COLOURS[m], linewidth=2 if m == "v3" else 1.4, label=labels[m])
         ax.set_title(title, color=INK, fontsize=10, loc="left")
         ax.set_ylim(-0.02, 1.02)
         ax.set_ylabel("score", color=MUTED, fontsize=9)

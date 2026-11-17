@@ -7,18 +7,20 @@ from typing import Callable, Iterable, Mapping, Optional
 
 import numpy as np
 
-from ..fusion import Fuser, GuardedPaperWMSS, Instant, OracleKalman, ResidualPersistenceV2, Smoothed, V2Config
+from ..fusion import Fuser, GuardedPaperWMSS, Instant, OracleKalman, ResidualPersistenceV2, ResidualPersistenceV3, Smoothed, V2Config, V3Config
 from .metrics import evaluate, half_time
 from .simulator import MODALITIES, SCENARIOS, STEP_DOWN, STEP_UP, Scenario, Session, generate
 
 MethodFactory = Callable[[Session], Fuser]
 
-DEFAULT_SETTINGS = {"mean_ema_rate": 0.3, "median_ema_rate": 0.3, "oracle_process_var": 0.002, "v2": {}}
+DEFAULT_SETTINGS = {"mean_ema_rate": 0.3, "median_ema_rate": 0.3, "oracle_process_var": 0.002, "v2": {}, "v3": {}}
 
+# Each v3 improvement switched off on its own, to show what it contributes.
 ABLATIONS = {
-    "v2 without variance": dict(use_variance=False),
-    "v2 without offset": dict(use_offset=False),
-    "v2 with fixed gain": dict(adaptive_gain=False),
+    "v3 equal weights": dict(alpha=0.0, beta=0.0),
+    "v3 without baseline pause": dict(gate=1e9),
+    "v3 rises only": dict(symmetric=False),
+    "v3 without smoothing": dict(level_rate=1.0),
 }
 
 
@@ -37,6 +39,7 @@ def methods(settings: Optional[Mapping] = None, include_ablations: bool = True) 
     """Every method in the protocol, as factories that build a fresh instance per session."""
     s = {**DEFAULT_SETTINGS, **(settings or {})}
     v2 = V2Config(**s["v2"])
+    v3 = V3Config(**s["v3"])
     out: dict[str, MethodFactory] = {
         "v1": lambda session: GuardedPaperWMSS(MODALITIES),
         "mean": lambda session: Instant("mean"),
@@ -46,10 +49,11 @@ def methods(settings: Optional[Mapping] = None, include_ablations: bool = True) 
         "median+ema": lambda session: Smoothed(Instant("median"), rate=s["median_ema_rate"]),
         "oracle": lambda session: OracleKalman(session.noise_var, process_var=s["oracle_process_var"]),
         "v2": lambda session: ResidualPersistenceV2(MODALITIES, v2),
+        "v3": lambda session: ResidualPersistenceV3(MODALITIES, v3),
     }
     if include_ablations:
         for name, change in ABLATIONS.items():
-            out[name] = lambda session, cfg=replace(v2, **change): ResidualPersistenceV2(MODALITIES, cfg)
+            out[name] = lambda session, cfg=replace(v3, **change): ResidualPersistenceV3(MODALITIES, cfg)
     return out
 
 

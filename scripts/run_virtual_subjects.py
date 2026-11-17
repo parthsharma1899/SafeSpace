@@ -24,7 +24,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from safespace.fusion import GuardedPaperWMSS, Instant, ResidualPersistenceV2, Smoothed, TUNED  # noqa: E402
+from safespace.fusion import GuardedPaperWMSS, Instant, ResidualPersistenceV2, ResidualPersistenceV3, Smoothed, TUNED  # noqa: E402
+from safespace.fusion.v3 import TUNED_V3  # noqa: E402
 from safespace.models.base import artifacts_dir  # noqa: E402
 from safespace.models.calibration import apply_platt  # noqa: E402
 from safespace.sim.metrics import auc, evaluate  # noqa: E402
@@ -125,6 +126,7 @@ def methods(rates):
         "mean+ema": lambda: Smoothed(Instant("mean"), rate=rates["mean_ema_rate"]),
         "median+ema": lambda: Smoothed(Instant("median"), rate=rates["median_ema_rate"]),
         "v2": lambda: ResidualPersistenceV2(MODALITIES, TUNED),
+        "v3": lambda: ResidualPersistenceV3(MODALITIES, TUNED_V3),
     }
 
 

@@ -7,26 +7,34 @@ Tuned on seeds 0-99; every number below is from seeds 1000-1199 (200 sessions pe
 
 | target | result | detail |
 |---|---|---|
-| 6. v2 has lower error than v1 in every scenario | MISSED | missed in: minority |
-| 7. v2 average error no higher than the better smoothed baseline | met | v2 0.0573, mean+ema 0.0681, median+ema 0.0619 |
-| 8. under a faulty modality, v2 gains less than half the error plain mean gains | met | stuck: v2 +0.0049 vs mean +0.0404; flipping: v2 +0.0057 vs mean +0.0839; biased: v2 +0.0110 vs mean +0.0285 |
+| 6. v2 has lower error than v1 in every scenario | MISSED | missed in: minority, leader |
+| 7. v2 average error no higher than the better smoothed baseline | met | v2 0.0670, mean+ema 0.0735, median+ema 0.0699 |
+| 8. under a faulty modality, v2 gains less than half the error plain mean gains | met | stuck: v2 +0.0054 vs mean +0.0404; flipping: v2 +0.0063 vs mean +0.0839; biased: v2 +0.0128 vs mean +0.0285 |
 | 9. v2 reacts to a fall within 1.5x of its reaction to a rise | met | rise 0.00 steps, fall 0.00 steps |
+| 10. v3 meets requirements 1-5 | met | enforced by tests/test_fusion_properties.py |
+| 11. v3 has lower error than v1 in every scenario | met | all 13 scenarios |
+| 12. v3 average error no higher than the plain mean | met | v3 0.0738, mean 0.0865 |
+| 13. where one signal leads (minority, leader), v3 beats the plain mean | met | minority: v3 0.1192 vs mean 0.1830; leader: v3 0.0859 vs mean 0.1104 |
+| 14. v3 reacts to a fall within 1.5x of its reaction to a rise | MISSED | rise 0.02 steps, fall 0.04 steps |
 
 ## Mean absolute error (lower is better)
 
-| scenario | v1 | mean | median | max | mean+ema | median+ema | v2 | oracle | v2 without variance | v2 without offset | v2 with fixed gain |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| clean | 0.0698 | 0.0458 | 0.0511 | 0.1210 | 0.0344 | 0.0365 | 0.0326 | 0.0343 | 0.0323 | 0.0325 | 0.0430 |
-| unequal | 0.1026 | 0.0646 | 0.0552 | 0.1694 | 0.0454 | 0.0391 | 0.0309 | 0.0271 | 0.0422 | 0.0306 | 0.0429 |
-| missing | 0.1132 | 0.0678 | 0.0701 | 0.0964 | 0.0462 | 0.0472 | 0.0473 | 0.0457 | 0.0462 | 0.0480 | 0.0531 |
-| stuck | 0.1838 | 0.0862 | 0.0589 | 0.3030 | 0.0803 | 0.0465 | 0.0374 | 0.0801 | 0.0366 | 0.1371 | 0.0479 |
-| flipping | 0.2305 | 0.1298 | 0.0690 | 0.3360 | 0.0913 | 0.0457 | 0.0383 | 0.0919 | 0.0584 | 0.0392 | 0.0476 |
-| biased | 0.1518 | 0.0743 | 0.0672 | 0.2713 | 0.0738 | 0.0569 | 0.0436 | 0.0733 | 0.0428 | 0.0845 | 0.0543 |
-| calm | 0.0893 | 0.0443 | 0.0502 | 0.1267 | 0.0283 | 0.0306 | 0.0293 | 0.0287 | 0.0291 | 0.0292 | 0.0254 |
-| steps | 0.0710 | 0.0452 | 0.0516 | 0.1196 | 0.0305 | 0.0341 | 0.0254 | 0.0308 | 0.0252 | 0.0253 | 0.0304 |
-| minority | 0.1197 | 0.1830 | 0.2171 | 0.0754 | 0.1789 | 0.2119 | 0.2239 | 0.1585 | 0.2203 | 0.1930 | 0.2239 |
-| mixed | 0.1602 | 0.0890 | 0.0880 | 0.1485 | 0.0724 | 0.0704 | 0.0646 | 0.0628 | 0.0709 | 0.0655 | 0.0736 |
-| average | 0.1292 | 0.0830 | 0.0779 | 0.1767 | 0.0681 | 0.0619 | 0.0573 | 0.0633 | 0.0604 | 0.0685 | 0.0642 |
+| scenario | v1 | mean | median | max | mean+ema | median+ema | oracle | v2 | v3 | v3 equal weights | v3 without baseline pause | v3 rises only | v3 without smoothing |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| clean | 0.0698 | 0.0458 | 0.0511 | 0.1210 | 0.0344 | 0.0365 | 0.0343 | 0.0324 | 0.0358 | 0.0345 | 0.0345 | 0.0357 | 0.0467 |
+| unequal | 0.1026 | 0.0646 | 0.0552 | 0.1694 | 0.0454 | 0.0391 | 0.0271 | 0.0324 | 0.0493 | 0.0470 | 0.0465 | 0.0493 | 0.0613 |
+| missing | 0.1132 | 0.0678 | 0.0701 | 0.0964 | 0.0462 | 0.0472 | 0.0457 | 0.0470 | 0.0527 | 0.0492 | 0.0495 | 0.0521 | 0.0704 |
+| stuck | 0.1838 | 0.0862 | 0.0589 | 0.3030 | 0.0803 | 0.0465 | 0.0801 | 0.0379 | 0.1403 | 0.0790 | 0.0800 | 0.1405 | 0.1461 |
+| flipping | 0.2305 | 0.1298 | 0.0690 | 0.3360 | 0.0913 | 0.0457 | 0.0919 | 0.0388 | 0.0868 | 0.0956 | 0.0930 | 0.0853 | 0.1113 |
+| biased | 0.1518 | 0.0743 | 0.0672 | 0.2713 | 0.0738 | 0.0569 | 0.0733 | 0.0452 | 0.0759 | 0.0716 | 0.0717 | 0.0761 | 0.0777 |
+| calm | 0.0893 | 0.0443 | 0.0502 | 0.1267 | 0.0283 | 0.0306 | 0.0287 | 0.0292 | 0.0311 | 0.0307 | 0.0309 | 0.0310 | 0.0444 |
+| steps | 0.0710 | 0.0452 | 0.0516 | 0.1196 | 0.0305 | 0.0341 | 0.0308 | 0.0253 | 0.0327 | 0.0324 | 0.0324 | 0.0326 | 0.0454 |
+| minority | 0.1197 | 0.1830 | 0.2171 | 0.0754 | 0.1789 | 0.2119 | 0.1585 | 0.2216 | 0.1192 | 0.1794 | 0.1759 | 0.1189 | 0.1236 |
+| mixed | 0.1602 | 0.0890 | 0.0880 | 0.1485 | 0.0724 | 0.0704 | 0.0628 | 0.0653 | 0.0812 | 0.0746 | 0.0749 | 0.0817 | 0.0929 |
+| personal | 0.1005 | 0.0464 | 0.0565 | 0.1802 | 0.0367 | 0.0411 | 0.0366 | 0.0407 | 0.0393 | 0.0379 | 0.0378 | 0.0393 | 0.0495 |
+| leader | 0.1059 | 0.1104 | 0.1229 | 0.1089 | 0.1042 | 0.1149 | 0.1042 | 0.1197 | 0.0859 | 0.1045 | 0.1028 | 0.0859 | 0.0929 |
+| lone_or_stuck | 0.1507 | 0.1376 | 0.1428 | 0.1843 | 0.1325 | 0.1340 | 0.1216 | 0.1350 | 0.1294 | 0.1321 | 0.1308 | 0.1294 | 0.1346 |
+| average | 0.1269 | 0.0865 | 0.0847 | 0.1724 | 0.0735 | 0.0699 | 0.0689 | 0.0670 | 0.0738 | 0.0745 | 0.0739 | 0.0737 | 0.0844 |
 
 `oracle` is told each modality's true noise level and is a reference, not a competitor.
 
@@ -34,17 +42,19 @@ Tuned on seeds 0-99; every number below is from seeds 1000-1199 (200 sessions pe
 
 | method | bias (+ reads high) | false alarm share | episode AUC |
 |---|---:|---:|---:|
-| v1 | 0.0966 | 0.0791 | 0.9450 |
-| mean | 0.0021 | 0.0006 | 0.9860 |
-| median | -0.0100 | 0.0006 | 0.9802 |
-| max | 0.1646 | 0.1083 | 0.9151 |
-| mean+ema | 0.0016 | 0.0003 | 0.9930 |
-| median+ema | -0.0106 | 0.0003 | 0.9903 |
-| v2 | -0.0127 | 0.0002 | 0.9895 |
-| oracle | 0.0013 | 0.0013 | 0.9926 |
-| v2 without variance | -0.0109 | 0.0001 | 0.9901 |
-| v2 without offset | 0.0061 | 0.0111 | 0.9862 |
-| v2 with fixed gain | -0.0156 | 0.0001 | 0.9870 |
+| v1 | 0.0840 | 0.0689 | 0.9509 |
+| mean | -0.0090 | 0.0004 | 0.9861 |
+| median | -0.0219 | 0.0004 | 0.9759 |
+| max | 0.1591 | 0.0989 | 0.9230 |
+| mean+ema | -0.0095 | 0.0003 | 0.9919 |
+| median+ema | -0.0225 | 0.0003 | 0.9869 |
+| oracle | -0.0089 | 0.0010 | 0.9918 |
+| v2 | -0.0240 | 0.0001 | 0.9867 |
+| v3 | 0.0128 | 0.0056 | 0.9855 |
+| v3 equal weights | -0.0096 | 0.0003 | 0.9921 |
+| v3 without baseline pause | -0.0087 | 0.0003 | 0.9924 |
+| v3 rises only | 0.0138 | 0.0058 | 0.9857 |
+| v3 without smoothing | 0.0120 | 0.0072 | 0.9826 |
 
 ## Reaction time to an abrupt change, in steps
 
@@ -56,11 +66,13 @@ Tuned on seeds 0-99; every number below is from seeds 1000-1199 (200 sessions pe
 | max | 0.00 | 0.00 |
 | mean+ema | 0.54 | 0.47 |
 | median+ema | 0.56 | 0.53 |
-| v2 | 0.00 | 0.00 |
 | oracle | 0.38 | 0.35 |
-| v2 without variance | 0.00 | 0.00 |
-| v2 without offset | 0.00 | 0.00 |
-| v2 with fixed gain | 1.42 | 1.40 |
+| v2 | 0.00 | 0.00 |
+| v3 | 0.02 | 0.04 |
+| v3 equal weights | 0.02 | 0.04 |
+| v3 without baseline pause | 0.02 | 0.04 |
+| v3 rises only | 0.02 | 0.04 |
+| v3 without smoothing | 0.00 | 0.00 |
 
 ## Substitutions needed to run v1 (average steps per 240-step session)
 
@@ -76,6 +88,9 @@ Tuned on seeds 0-99; every number below is from seeds 1000-1199 (200 sessions pe
 | steps | 6.8 | 0.0 |
 | minority | 0.3 | 0.0 |
 | mixed | 0.7 | 236.1 |
+| personal | 0.7 | 0.0 |
+| leader | 0.5 | 0.0 |
+| lone_or_stuck | 0.4 | 0.0 |
 
 ## Tuned settings
 
@@ -85,11 +100,20 @@ Tuned on seeds 0-99; every number below is from seeds 1000-1199 (200 sessions pe
   "median_ema_rate": 0.5,
   "oracle_process_var": 0.002,
   "v2": {
-    "floor_std": 0.05,
+    "floor_std": 0.1,
     "base_gain": 0.3,
     "surprise_k": 2.5,
     "var_rate": 0.05,
     "carry": 6.0
+  },
+  "v3": {
+    "persist_rate": 0.4,
+    "level_rate": 0.6,
+    "alpha": 0.0,
+    "beta": 0.5,
+    "deadband": 1.0,
+    "baseline_rate": 0.02,
+    "cap": 0.6
   }
 }
 ```

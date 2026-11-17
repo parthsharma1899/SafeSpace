@@ -57,6 +57,12 @@ class Scenario:
     steps: int = 240
     lone_detector: bool = False
     """If set, one random modality keeps full sensitivity and noise 0.08 while the rest go nearly blind."""
+    personal_offset_std: float = 0.0
+    """If set, each modality gets a constant per-person offset (std of the offsets; they average to zero)."""
+    leader: bool = False
+    """If set, one random modality responds fully and at once; the others late (lag 6) and partly (60%)."""
+    lone_or_stuck: bool = False
+    """If set, half the sessions have a lone detector and half have one modality stuck near 1.0."""
 
 
 @dataclass
@@ -123,9 +129,24 @@ def generate(scenario: Scenario, seed: int) -> Session:
     truth = true_stress(scenario.stress, steps, rng)
     specs = dict(scenario.specs)
 
-    if scenario.lone_detector:
+    # New random draws happen only when a scenario switches these on, so the
+    # original scenarios generate exactly the same sessions as before.
+    stuck_half = False
+    if scenario.lone_or_stuck:
+        stuck_half = bool(rng.random() < 0.5)
+    if scenario.lone_detector or (scenario.lone_or_stuck and not stuck_half):
         detector = str(rng.choice(list(specs)))
         specs = {m: replace(s, sensitivity=1.0, noise=0.08) if m == detector else replace(s, sensitivity=0.15, noise=0.10) for m, s in specs.items()}
+    if scenario.leader:
+        lead = str(rng.choice(list(specs)))
+        specs = {m: s if m == lead else replace(s, lag=6.0, sensitivity=0.6) for m, s in specs.items()}
+    offsets = dict.fromkeys(specs, 0.0)
+    if scenario.personal_offset_std > 0:
+        drawn = rng.normal(0, scenario.personal_offset_std, len(specs))
+        offsets = dict(zip(specs, drawn - drawn.mean()))
+    faults = list(scenario.faults)
+    if stuck_half:
+        faults.append(Fault("stuck", start=(0.1, 0.4), length=(0.4, 0.5), value=0.97))
 
     rest = truth[0]
     scores: dict[str, np.ndarray] = {}
@@ -135,13 +156,13 @@ def generate(scenario: Scenario, seed: int) -> Session:
             a = 1 - np.exp(-1 / spec.lag)
             for i in range(1, steps):
                 view[i] = view[i - 1] + a * (truth[i] - view[i - 1])
-        s = rest + spec.sensitivity * (view - rest) + spec.bias + rng.normal(0, spec.noise, steps)
+        s = rest + spec.sensitivity * (view - rest) + spec.bias + offsets[m] + rng.normal(0, spec.noise, steps)
         s = np.clip(s, 0.0, 1.0)
         s[~_presence(spec, steps, rng)] = np.nan
         scores[m] = s
 
     faulty = []
-    for fault in scenario.faults:
+    for fault in faults:
         if rng.random() >= fault.probability:
             continue
         m = fault.modality or str(rng.choice(list(specs)))
@@ -197,5 +218,9 @@ SCENARIOS: dict[str, Scenario] = {
             },
             faults=(Fault("stuck", start=(0.1, 0.7), length=(0.1, 0.2), value=0.97, probability=0.5),),
         ),
+        # Added 2026-11-17 (see the addendum in docs/protocol.md).
+        Scenario("personal", personal_offset_std=0.15),
+        Scenario("leader", leader=True),
+        Scenario("lone_or_stuck", lone_or_stuck=True),
     ]
 }

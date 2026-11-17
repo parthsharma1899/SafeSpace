@@ -8,7 +8,7 @@ import pytest
 import json
 from pathlib import Path
 
-from safespace.fusion import TUNED, Instant, OracleKalman, ResidualPersistenceV2, Smoothed, StaticWeights, V2Config
+from safespace.fusion import TUNED, Instant, OracleKalman, ResidualPersistenceV2, ResidualPersistenceV3, Smoothed, StaticWeights, V2Config, V3Config
 
 MODS = ["wrist", "text", "voice", "face"]
 
@@ -17,6 +17,10 @@ def make_fusers():
     return [
         ResidualPersistenceV2(MODS),
         ResidualPersistenceV2(MODS, TUNED, name="v2-tuned"),
+        ResidualPersistenceV3(MODS),
+        ResidualPersistenceV3(MODS, V3Config(cap=0.6), name="v3-cap"),
+        ResidualPersistenceV3(MODS, V3Config(stuck_window=0), name="v3-no-stuck-check"),
+        ResidualPersistenceV3(MODS, V3Config(symmetric=False), name="v3-rises-only"),
         ResidualPersistenceV2(MODS, V2Config(carry=6.0), name="v2-carry"),
         ResidualPersistenceV2(MODS, V2Config(use_variance=False), name="v2-no-variance"),
         ResidualPersistenceV2(MODS, V2Config(use_offset=False), name="v2-no-offset"),
@@ -143,8 +147,11 @@ def test_rejects_invalid_scores(fuser):
         fuser.step({"wrist": -0.1})
 
 
-@pytest.mark.parametrize("fuser", [f for f in FUSERS if f.name.startswith("v2")], ids=[n for n in IDS if n.startswith("v2")])
-def test_v2_treats_rises_and_falls_alike(fuser):
+MIRRORED = [f for f in FUSERS if f.name.startswith("v2") or f.name in ("v3", "v3-cap", "v3-no-stuck-check")]
+
+
+@pytest.mark.parametrize("fuser", MIRRORED, ids=[f.name for f in MIRRORED])
+def test_treats_rises_and_falls_alike(fuser):
     """Feeding 1 - score must give 1 - result: no built-in tilt towards high or low."""
     rng = np.random.default_rng(4)
     for _ in range(40):

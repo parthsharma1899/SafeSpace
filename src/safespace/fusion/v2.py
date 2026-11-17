@@ -167,4 +167,4 @@ class ResidualPersistenceV2:
 # The settings chosen by scripts/run_fusion_benchmark.py on the tuning seeds.
 # Kept as a named constant so the API, the benchmark and the tests all use the
 # same v2. These values must match the "v2" block of results/fusion_tuning.json.
-TUNED = V2Config(floor_std=0.05, base_gain=0.3, surprise_k=2.5, var_rate=0.05, carry=6.0)
+TUNED = V2Config(floor_std=0.1, base_gain=0.3, surprise_k=2.5, var_rate=0.05, carry=6.0)

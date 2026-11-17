@@ -99,3 +99,40 @@ The simulator tests how a fusion rule behaves under stated assumptions. It
 cannot show that the fused score matches a real person's stress. That needs
 recordings of several modalities from the same people, which is the next
 stage of validation.
+
+## Addendum, 2026-11-17: v3 and three new scenarios
+
+Written before any v3 result was produced.
+
+**Why.** Nine of the ten scenarios above assume every signal tracks the same
+stress with independent noise. That favours methods that trust agreement. The
+project's own design assumes something else: a person has a baseline per
+signal, and one signal can show a real, lasting change before the others. The
+three scenarios below test that assumption, and v3 (`src/safespace/fusion/v3.py`)
+implements it.
+
+**New scenarios** (added to the ten; 240 steps each, same metrics):
+
+| Scenario | What it tests |
+|---|---|
+| `personal` | Each person has their own offset per signal (a signal that always reads high or low for them; offsets average to zero across signals). |
+| `leader` | One signal responds to stress fully and at once; the other three respond late (time constant 6 steps) and only partly (60%). |
+| `lone_or_stuck` | Half the sessions have one signal that alone detects the stress (as in `minority`); the other half have one signal stuck near 1.0 (as in `stuck`). Neither kind of method can win both halves. |
+
+**Tuning.** Every tuned method (smoothed mean, smoothed median, oracle, v2,
+v3) is re-tuned on seeds 0 to 99 by mean error averaged over all 13
+scenarios, so all methods are tuned under the same rule. Reported numbers come
+from seeds 1000 to 1199.
+
+**Targets for v3:**
+
+10. v3 meets requirements 1 to 5 (enforced by tests).
+11. v3 has lower error than v1 in every scenario.
+12. Averaged over all 13 scenarios, v3 has error no higher than the plain mean.
+13. In `minority` and `leader`, where one signal leads, v3 has lower error
+    than the plain mean.
+14. In `steps`, v3's reaction time for the fall is within 1.5 times its
+    reaction time for the rise.
+
+v3 is also reported next to v2 and the smoothed baselines, without a target.
+Missed targets are reported as missed.
