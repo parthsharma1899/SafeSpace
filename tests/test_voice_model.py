@@ -21,7 +21,7 @@ def test_wrapper_matches_the_original_function():
     """The wrapper must reproduce the original predict_stress to 4 decimal places."""
     import importlib.util
 
-    legacy_path = ROOT / "safespace_fusion" / "models" / "voice_model.py"
+    legacy_path = ROOT / "legacy" / "app" / "models" / "voice_model.py"
     spec = importlib.util.spec_from_file_location("legacy_voice", legacy_path)
     legacy = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(legacy)

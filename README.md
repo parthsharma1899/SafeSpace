@@ -116,5 +116,5 @@ web/                React frontend (playground + demo)
 scripts/            one script per reproducible result
 docs/               protocol, fusion method, claims, datasets, model cards
 results/            generated tables and figures (committed)
-safespace_fusion/   the original 2025 app, kept for reference
+legacy/            the original 2025 app and notebook export, kept for reference
 ```

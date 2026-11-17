@@ -64,3 +64,6 @@ PHASE4 | 2026-11-16 | exit check met | 4.1 done; 4.2/4.3/4.4 recorded WAITING on
 8.1 | 2026-11-16 | PENDING owner | move safespace_fusion -> legacy/ (ASK FIRST)
 8.3 | 2026-11-16 | PENDING owner | code licence choice (ASK FIRST)
 8.5 | 2026-11-16 | PENDING owner | push revamp + open PR to main (ASK FIRST)
+8.1 | 2026-11-17 | done | moved safespace_fusion -> legacy/app, Untitled.py -> legacy/notebook_export.py, old HF scripts -> legacy/; updated gitignore, 2 test paths, README, voice docstring; 181 tests pass
+8.3 | 2026-11-17 | skipped | owner chose no licence for now
+6.5 | 2026-11-17 | skipped | owner did not ask to publish the playground

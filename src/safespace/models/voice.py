@@ -1,7 +1,7 @@
 """Voice stress model: the owner's CNN on MFCCs, unchanged.
 
 The feature code below is a character-for-character copy of `extract_features`
-in safespace_fusion/models/voice_model.py, so the wrapper and the original give
+in legacy/app/models/voice_model.py, so the wrapper and the original give
 identical scores. Weights live in artifacts/voice/speech_model.keras.
 
 A clip shorter than 1 second, or one that is essentially silent, is treated as

@@ -9,7 +9,7 @@ import pytest
 from safespace.fusion import MissingModalityError, PaperWMSS, ZeroTotalWeightError
 
 FIVE = ["biomedical", "behavioral", "text", "voice", "facial"]
-LEGACY = Path(__file__).resolve().parents[1] / "safespace_fusion" / "fusion_engine.py"
+LEGACY = Path(__file__).resolve().parents[1] / "legacy" / "app" / "fusion_engine.py"
 
 # Table 15 of the paper draft: (residual, persistence, final weight) per modality, per timestamp.
 TABLE_15 = [
