@@ -17,8 +17,10 @@ is available into one score over time.
   score-level simulator.
 - **Four modality models** (`src/safespace/models/`), each with a measured model
   card in `docs/models/`.
-- **A FastAPI backend** (`src/safespace/api/`) and a **React frontend** (`web/`)
-  with a client-side fusion playground and a live check-in demo.
+- **A web app** (`web/`, React) on a **FastAPI backend** (`src/safespace/api/`):
+  a one-minute stress check-in from what you write, a sentence read aloud and a
+  selfie, with a results screen that shows what each signal picked up and a
+  guided breathing exercise.
 
 ## Results
 
@@ -85,14 +87,20 @@ python scripts/fit_calibration.py              # results/calibration.md
 python scripts/run_virtual_subjects.py         # results/virtual_subjects.md
 ```
 
-## Run the demo
+## Run the app
 
 ```bash
 # backend (localhost only, no debug)
 uvicorn safespace.api.app:app --host 127.0.0.1 --port 8080
-# frontend
+# web app, then open http://localhost:5173
 cd web && npm install && npm run dev
 ```
+
+The web app calls the API at `/api`, which the dev server forwards to port 8080
+(set `SAFESPACE_API` to forward elsewhere, or `VITE_API_URL` to call another
+host directly). Camera and microphone need a secure page, so open it at
+`localhost`, not a network address. Voice is converted to WAV in the browser, so
+the server needs no audio codecs.
 
 Set `SAFESPACE_API_STUB=1` to run the API with fixed stub scores and no weights.
 For the High-stress support message, set `GEMINI_API_KEY` and `GEMINI_MODEL`
@@ -105,14 +113,17 @@ For the High-stress support message, set `GEMINI_API_KEY` and `GEMINI_MODEL`
 - The wrist model is validated on 15 lab subjects on one device; the text model
   may have seen its test posts in training; the voice test shares speakers across
   train and test. Each card states its own limits.
-- The demo stores nothing and runs models in memory; uploads are deleted before
-  the response returns.
+- The app stores nothing and runs models in memory; uploads are deleted before
+  the response returns. Only the scores of a visit are kept in memory, for 30
+  minutes.
+- A result blends in readings from check-ins made in the last few minutes (the
+  fusion is built for streams); the results screen says which ones it used.
 
 ## Layout
 
 ```
 src/safespace/      fusion, sim, models, data, api
-web/                React frontend (playground + demo)
+web/                React web app (check-in, results, breathing exercise)
 scripts/            one script per reproducible result
 docs/               protocol, fusion method, claims, datasets, model cards
 results/            generated tables and figures (committed)

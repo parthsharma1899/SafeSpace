@@ -22,6 +22,8 @@ from typing import Optional
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from ..fusion import stress_level
+from ..models.base import ModalityScore
 from .bundle import RealBundle, StubBundle
 from .sessions import SessionStore
 from .support import support_message
@@ -123,24 +125,32 @@ def create_app(bundle=None) -> FastAPI:
         def record(name, score):
             modalities[name] = {"available": score.available, "score": score.score, "reason": score.reason}
 
+        def safely(fn, *args, reason):
+            # One unreadable input (e.g. an audio format the decoder can't open) must
+            # mark only that signal unavailable, never fail the whole check-in.
+            try:
+                return fn(*args)
+            except Exception:
+                return ModalityScore(None, False, reason)
+
         if text is not None:
-            record("text", bundle.score_text(text))
+            record("text", safely(bundle.score_text, text, reason="could not process the text"))
         if wrist is not None:
             try:
                 w = json.loads(wrist)
-                score = bundle.score_wrist(w["pulse"], w["conductance"], float(w["rate_pulse"]), float(w["rate_conductance"]), session.baseline)
+                args = (w["pulse"], w["conductance"], float(w["rate_pulse"]), float(w["rate_conductance"]), session.baseline)
             except (KeyError, TypeError, ValueError, json.JSONDecodeError):
                 raise HTTPException(status_code=422, detail="wrist must be JSON with pulse, conductance, rate_pulse, rate_conductance")
-            record("wrist", score)
+            record("wrist", safely(bundle.score_wrist, *args, reason="could not process the wearable signal"))
 
         audio_path = image_path = None
         try:
             if audio is not None and audio.filename:
                 audio_path = await _to_tempfile(audio, os.path.splitext(audio.filename)[1] or ".wav")
-                record("voice", bundle.score_voice(audio_path))
+                record("voice", safely(bundle.score_voice, audio_path, reason="could not read the recording"))
             if image is not None and image.filename:
                 image_path = await _to_tempfile(image, os.path.splitext(image.filename)[1] or ".jpg")
-                record("face", bundle.score_face(image_path))
+                record("face", safely(bundle.score_face, image_path, reason="could not read the photo"))
         finally:
             _safe_unlink(audio_path)
             _safe_unlink(image_path)
@@ -158,14 +168,23 @@ def create_app(bundle=None) -> FastAPI:
             trend = "rising"
         elif fused_detail.get("residual", 0) < -0.03:
             trend = "falling"
-        message = support_message(level, result.dominant, trend) if result.score is not None else ""
+        # `level` is the alert, which rises at once and clears slowly (for nudges and
+        # notifications). What the person is shown right now -- the message, and the
+        # `estimate_level` -- follows the current fused estimate instead.
+        estimate_level = stress_level(result.score) if result.score is not None else None
+        message = support_message(estimate_level, result.dominant, trend) if estimate_level else ""
+        # Signals that counted but were not sent in this request were carried over
+        # from a recent check-in (they fade out over `carry` steps).
+        carried = sorted(set(result.weights) - set(result.available))
 
         response = {
             "t": round(now - session.created, 2),
             "modalities": modalities,
             "fused": None if result.score is None else round(result.score, 4),
             "weights": {k: round(v, 4) for k, v in result.weights.items()},
+            "carried": carried,
             "spread": None if result.spread is None else round(result.spread, 4),
+            "estimate_level": estimate_level,
             "level": level,
             "message": message,
         }
