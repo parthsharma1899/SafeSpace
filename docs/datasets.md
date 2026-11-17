@@ -24,7 +24,9 @@ here before publishing any weight trained on it.
   McKeown, LOUHI 2019).
 - Used: the `text` and `label` columns of `dreaddit-test.csv` (715 rows) to
   measure the existing text model.
-- Licence: to be copied after download.
+- Licence: none stated (checked 2026-11-17: not in the zip, the paper or the
+  ACL Anthology page). The posts come from Reddit, so Reddit's content terms
+  also apply. Ask the authors before publishing weights trained on it.
 
 ## RAVDESS speech (voice model)
 
@@ -33,8 +35,9 @@ here before publishing any weight trained on it.
 - Used: all 1,440 speech clips to measure the existing voice model. Emotions
   04, 05, 06, 07 (sad, angry, fearful, disgust) are stressed; 01, 02, 03, 08
   are relaxed.
-- Licence: CC BY-NC-SA 4.0 (to be confirmed from the Zenodo record after
-  download).
+- Licence: CC BY-NC-SA 4.0 (non-commercial, attribution, share-alike), per the
+  Zenodo record and its library listings (checked 2026-11-17). Commercial
+  licences are sold by the authors (ravdess@gmail.com).
 
 ## FER-2013 (face model)
 
@@ -43,7 +46,10 @@ here before publishing any weight trained on it.
 - Used: the test split to record the face model's behaviour. Emotions 0, 1, 2, 4
   (angry, disgust, fear, sad) are stressed; 3, 5, 6 (happy, surprise, neutral)
   are relaxed, following the paper's mapping.
-- Licence: to be confirmed from the mirror after download.
+- Licence: no clear licence (checked 2026-11-17). Access is through the Kaggle
+  competition rules, and projects built on it do not re-host the images. A
+  mirror's "MIT" tag is the mirror's, not the dataset's. Check the Kaggle rules
+  before publishing the re-fitted face weights.
 
 ## UBFC-Phys (real-person validation, Phase 4)
 

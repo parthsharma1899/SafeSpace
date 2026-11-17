@@ -67,3 +67,5 @@ PHASE4 | 2026-11-16 | exit check met | 4.1 done; 4.2/4.3/4.4 recorded WAITING on
 8.1 | 2026-11-17 | done | moved safespace_fusion -> legacy/app, Untitled.py -> legacy/notebook_export.py, old HF scripts -> legacy/; updated gitignore, 2 test paths, README, voice docstring; 181 tests pass
 8.3 | 2026-11-17 | skipped | owner chose no licence for now
 6.5 | 2026-11-17 | skipped | owner did not ask to publish the playground
+FIX | 2026-11-17 | done | live check-in 500: browser voice was WebM, server can't decode (no ffmpeg) and the error failed the whole request incl. photo. Browser now records WAV; API marks a failing signal unavailable instead of 500 (regression test).
+6.R | 2026-11-17 | done | web app rebuilt as product (welcome -> check-in -> results + breathing); owner asked to drop v1/mean comparison; message now follows current estimate (estimate_level), carried signals reported; e2e in Chrome w/ fake camera+mic passes desktop+phone, no console errors

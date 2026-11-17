@@ -17,8 +17,10 @@ is available into one score over time.
   score-level simulator.
 - **Four modality models** (`src/safespace/models/`), each with a measured model
   card in `docs/models/`.
-- **A FastAPI backend** (`src/safespace/api/`) and a **React frontend** (`web/`)
-  with a client-side fusion playground and a live check-in demo.
+- **A web app** (`web/`, React) on a **FastAPI backend** (`src/safespace/api/`):
+  a one-minute stress check-in from what you write, a sentence read aloud and a
+  selfie, with a results screen that shows what each signal picked up and a
+  guided breathing exercise.
 
 ## Results
 
@@ -85,14 +87,20 @@ python scripts/fit_calibration.py              # results/calibration.md
 python scripts/run_virtual_subjects.py         # results/virtual_subjects.md
 ```
 
-## Run the demo
+## Run the app
 
 ```bash
 # backend (localhost only, no debug)
 uvicorn safespace.api.app:app --host 127.0.0.1 --port 8080
-# frontend
+# web app, then open http://localhost:5173
 cd web && npm install && npm run dev
 ```
+
+The web app calls the API at `/api`, which the dev server forwards to port 8080
+(set `SAFESPACE_API` to forward elsewhere, or `VITE_API_URL` to call another
+host directly). Camera and microphone need a secure page, so open it at
+`localhost`, not a network address. Voice is converted to WAV in the browser, so
+the server needs no audio codecs.
 
 Set `SAFESPACE_API_STUB=1` to run the API with fixed stub scores and no weights.
 For the High-stress support message, set `GEMINI_API_KEY` and `GEMINI_MODEL`
@@ -105,14 +113,81 @@ For the High-stress support message, set `GEMINI_API_KEY` and `GEMINI_MODEL`
 - The wrist model is validated on 15 lab subjects on one device; the text model
   may have seen its test posts in training; the voice test shares speakers across
   train and test. Each card states its own limits.
-- The demo stores nothing and runs models in memory; uploads are deleted before
-  the response returns.
+- The app stores nothing and runs models in memory; uploads are deleted before
+  the response returns. Only the scores of a visit are kept in memory, for 30
+  minutes.
+- A result blends in readings from check-ins made in the last few minutes (the
+  fusion is built for streams); the results screen says which ones it used.
+
+## Further steps
+
+What someone picking up this project needs to do next. `PLAN.md` has the
+step-by-step detail and `docs/progress.md` records what is already done.
+
+### Licences and permissions to get
+
+**For the code and the trained models**
+
+| What to get | Why it is needed | Status |
+|---|---|---|
+| A licence for this code, such as MIT or Apache-2.0 | Without one the repository is "all rights reserved": nobody, including outside collaborators, may legally reuse, change or redistribute the code. MIT is the usual choice for research code; Apache-2.0 adds an explicit patent grant. | Not chosen |
+| Permission to publish the voice model (RAVDESS) | RAVDESS is CC BY-NC-SA 4.0: free for non-commercial research with credit, and anything derived must be shared on the same terms. Commercial use needs a paid licence from the authors (ravdess@gmail.com). | Terms known |
+| Permission to publish the wrist model (WESAD) | WESAD's readme asks only that publications cite Schmidt et al. (2018) and gives no redistribution terms. Ask the authors before publishing weights trained on it. | Ask authors |
+| Permission to publish the face model (FER-2013) | FER-2013 is distributed through Kaggle's competition rules with no clear licence, and the images may not be re-hosted. Check the Kaggle rules before publishing the re-fitted face weights. | Unconfirmed |
+| Permission to publish the text model (Dreaddit) | No licence is stated for Dreaddit, and it is built from Reddit posts, so Reddit's content terms also apply. Ask the authors before publishing the text weights. | Unconfirmed |
+
+Publishing the weights matters: `artifacts/` is not hosted anywhere, so a fresh
+clone cannot run the real models until they are.
+
+**For new data**
+
+| What to get | Why it is needed | Status |
+|---|---|---|
+| StressID licence | The main test of the fusion on real people: face, voice and body signals from the same 65 people, with stress labels. A permanent faculty member must sign it and email it to Inria (project.inria.fr/stressid). Non-commercial only; models trained on it may not be redistributed. | Waiting for signature |
+| UBFC-Phys access | A second real-person test set (face video plus wrist BVP and EDA). Register on IEEE DataPort and accept its terms. | Not started |
+| Ethics approval and consent forms | Needed before recording volunteers with the ESP32 wearable, camera or microphone: approval from your institution's ethics committee, signed consent from each person, and handling that meets data-protection law (for example India's Digital Personal Data Protection Act 2023). | Not started |
+
+**Optional**
+
+| What to get | Why it is needed |
+|---|---|
+| A Gemini API key | Turns on generated support messages for High stress (set `GEMINI_API_KEY` and `GEMINI_MODEL`). Google's API terms apply. The app sends Gemini only the stress level, the main signal and the trend, never what a person wrote, said or looked like. |
+| Commercial licences and a regulatory check | Only if SafeSpace is ever offered commercially: a commercial RAVDESS licence (or a voice model retrained on commercially licensed speech), a fresh check of every dataset's terms, and advice on whether a stress-assessment app counts as a medical device where it is offered. |
+
+### Work left
+
+1. **Host the model weights** once the permissions above allow, and add a
+   download script. The old Hugging Face helpers in `legacy/` point at the
+   previous folder layout.
+2. **Test the fusion on real same-person data**: UBFC-Phys, then StressID
+   (PLAN.md steps 4.2 and 4.3). So far it is tested on simulated sessions and on
+   scores paired across different people.
+3. **Run a pilot with the ESP32 wearable** (step 4.4). The wrist model was
+   trained on the Empatica E4, so the ESP32's skin-conductance and pulse sensors
+   need checking against it. Its DHT22 measures room air, not skin, and is
+   rightly unused.
+4. **Add the wearable to the web app**: a 2-minute resting baseline, then live
+   readings. The API (`/baseline`) and `scripts/wearable_bridge.py` already
+   support it; the web app does not yet.
+5. **Improve the models.** Face: the saved ViT holds untrained weights, so the
+   CNN + ViT + ELM design has never been tested as the paper describes; it needs
+   a trained ViT (current AUC 0.70 comes mainly from ResNet). Voice: evaluate
+   with whole actors held out, for an honest score on new speakers. Text:
+   re-evaluate on posts the model has never seen.
+6. **Decide what the fusion should favour.** v2 ties a tuned smoothed mean when
+   every signal is reliable, and loses when only one signal notices the stress
+   (`docs/fusion.md`). Real same-person data will show which case is more common.
+7. **Deploy** the API and web app on one HTTPS address; browsers allow the
+   camera and microphone only on HTTPS or `localhost`. Sessions live in memory,
+   so run one server process or move sessions to a shared store.
+8. **Revise the paper** from `docs/claims.md`, which lists every claim in the
+   draft with its current status (PLAN.md Phase 9).
 
 ## Layout
 
 ```
 src/safespace/      fusion, sim, models, data, api
-web/                React frontend (playground + demo)
+web/                React web app (check-in, results, breathing exercise)
 scripts/            one script per reproducible result
 docs/               protocol, fusion method, claims, datasets, model cards
 results/            generated tables and figures (committed)
