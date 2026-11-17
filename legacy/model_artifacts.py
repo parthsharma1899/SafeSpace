@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MODELS_DIR = REPO_ROOT / "safespace_fusion" / "models"
+MODELS_DIR = REPO_ROOT / "legacy" / "app" / "models"
 
 ARTIFACT_PATTERNS = [
     "biomedical_model.pkl",

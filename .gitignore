@@ -1,5 +1,5 @@
 # Local Python environments
-safespace/
+/safespace/
 .venv/
 venv/
 env/
@@ -8,24 +8,37 @@ env/
 *.ipynb
 .ipynb_checkpoints/
 
-# Model artifacts
-# Keep the small Python loader modules in Git, but host trained weights and
-# generated model files outside normal Git. See safespace_fusion/README.md.
-safespace_fusion/models/*.h5
-safespace_fusion/models/*.keras
-safespace_fusion/models/*.npz
-safespace_fusion/models/*.npy
-safespace_fusion/models/*.pkl
-safespace_fusion/models/*.safetensors
-safespace_fusion/models/.cache/
-safespace_fusion/models/features/
-safespace_fusion/models/stress_classifier_epoch2/
-safespace_fusion/models/models_face/resnet50_features/
-safespace_fusion/models/models_face/vit_features/
+# Legacy app's trained weights and generated model files (kept out of Git).
+legacy/app/models/*.h5
+legacy/app/models/*.keras
+legacy/app/models/*.npz
+legacy/app/models/*.npy
+legacy/app/models/*.pkl
+legacy/app/models/*.safetensors
+legacy/app/models/.cache/
+legacy/app/models/features/
+legacy/app/models/stress_classifier_epoch2/
+legacy/app/models/models_face/resnet50_features/
+legacy/app/models/models_face/vit_features/
+legacy/app/uploads/
 
-# Python cache
+# Downloaded datasets (fetched by scripts, never committed) - repo root only,
+# so it does not also hide the src/safespace/data package.
+/data/
+
+# Model weights (fetched or trained, never committed)
+/artifacts/
+
+# Unpublished paper draft
+Technical_paper*.pdf
+
+# Python cache and build output
 __pycache__/
 *.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
 
 # Environment / secrets
 .env
